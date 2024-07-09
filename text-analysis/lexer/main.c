@@ -58,5 +58,63 @@ int isKeyword(const char *value) {
   return false;
 }
 
+void tokenize(const char *fileName) {
+  FILE *fp = fopen(fileName, "r");
+  if (!fp) {
+    fprintf(stderr, "Could not open file %s\n", fileName);
+    return;
+  }
+
+  char ch;
+  Token currentToken;
+  int index = 0;
+
+  while ((ch = fgetc(fp)) != EOF) {
+    if (isspace(ch)) {
+      continue;
+    }
+
+    index = 0;
+    if (isalpha(ch) || ch == '_') {
+      do {
+        currentToken.value[index++] = ch;
+      } while (isalnum(ch = fgetc(fp)) || ch == '_');
+
+      ungetc(ch, fp);
+      currentToken.value[index] = '\0';
+      currentToken.type = isKeyword(currentToken.value) ? KEYWORD : IDENTIFIER;
+
+    } else if (isdigit(ch)) {
+      do {
+        currentToken.value[index++] = ch;
+      } while (isdigit(ch = fgetc(fp)));
+
+      ungetc(ch, fp);
+      currentToken.value[index] = '\0';
+      currentToken.type = CONSTANT;
+
+    } else if (strchr(punctuators, ch) != NULL) {
+      currentToken.value[0] = ch;
+      currentToken.value[1] = '\0';
+      currentToken.type = PUNCTUATOR;
+
+      if ((ch == '+' && (ch = fgetc(fp)) == '+') || (ch = fgetc(fp)) == '=') {
+        strcat(currentToken.value, "=");
+      } else {
+        ungetc(ch, fp);
+      }
+
+    } else {
+      currentToken.value[0] = ch;
+      currentToken.value[1] = '\0';
+      currentToken.type = UNKNOWN;
+    }
+    printToken(&currentToken);
+  }
+  fclose(fp);
+}
+
 int main() {
+  const char *fileName = "sample.c";
+  tokenize(fileName);
 }
