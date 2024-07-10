@@ -84,6 +84,11 @@ void tokenize(const char *fileName) {
       currentToken.value[index] = '\0';
       currentToken.type = isKeyword(currentToken.value) ? KEYWORD : IDENTIFIER;
 
+    } else if (ch == '#') {
+      while ((ch = fgetc(fp)) != EOF && ch != '\n') {
+      }
+      continue;
+
     } else if (isdigit(ch)) {
       do {
         currentToken.value[index++] = ch;
@@ -92,6 +97,17 @@ void tokenize(const char *fileName) {
       ungetc(ch, fp);
       currentToken.value[index] = '\0';
       currentToken.type = CONSTANT;
+
+    } else if (ch == '"') {
+      currentToken.value[index++] = ch;
+      while ((ch = fgetc(fp)) != EOF && ch != '"') {
+        currentToken.value[index++] = ch;
+      }
+      if (ch == '"') {
+        currentToken.value[index++] = ch;
+      }
+      currentToken.value[index] = '\0';
+      currentToken.type = STRING_LITERAL;
 
     } else if (strchr(punctuators, ch) != NULL) {
       currentToken.value[0] = ch;
