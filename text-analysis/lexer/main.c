@@ -19,8 +19,7 @@ typedef struct {
   char value[MAX_TOKEN_LEN];
 } Token;
 
-const char *keywords[] = {"int",   "for",    "if",     "else",
-                          "while", "return"};
+const char *keywords[] = {"int", "for", "if", "else", "while", "return"};
 const size_t num_keywords = sizeof(keywords) / sizeof(keywords[0]);
 
 const char *punctuators = "<>(){};=<>++";
@@ -130,7 +129,18 @@ void tokenize(const char *fileName) {
   fclose(fp);
 }
 
-int main() {
-  const char *fileName = "sample.c";
+void printUsage(const char *programName) {
+  printf("Usage: %s <filename>\n", programName);
+  printf(
+      "Tokenizes the given C source file and prints tokens to the console.\n");
+}
+
+int main(int argc, char *argv[]) {
+  if (argc != 2) {
+    printUsage(argv[0]);
+    return 1;
+  }
+
+  const char *fileName = argv[1];
   tokenize(fileName);
 }
