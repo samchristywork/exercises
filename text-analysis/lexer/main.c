@@ -10,6 +10,7 @@ typedef enum {
   IDENTIFIER,
   CONSTANT,
   STRING_LITERAL,
+  CHARACTER_CONSTANT,
   PUNCTUATOR,
   UNKNOWN
 } TokenType;
@@ -38,6 +39,9 @@ void printToken(Token *token) {
     break;
   case STRING_LITERAL:
     type_str = "STRING_LITERAL";
+    break;
+  case CHARACTER_CONSTANT:
+    type_str = "CHARACTER_CONSTANT";
     break;
   case PUNCTUATOR:
     type_str = "PUNCTUATOR";
@@ -107,6 +111,17 @@ void tokenize(const char *fileName) {
       }
       currentToken.value[index] = '\0';
       currentToken.type = STRING_LITERAL;
+
+    } else if (ch == '\'') {
+      currentToken.value[index++] = ch;
+      while ((ch = fgetc(fp)) != EOF && ch != '\'') {
+        currentToken.value[index++] = ch;
+      }
+      if (ch == '\'') {
+        currentToken.value[index++] = ch;
+      }
+      currentToken.value[index] = '\0';
+      currentToken.type = CHARACTER_CONSTANT;
 
     } else if (strchr(punctuators, ch) != NULL) {
       currentToken.value[0] = ch;
