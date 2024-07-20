@@ -23,7 +23,7 @@ typedef struct {
 const char *keywords[] = {"int", "for", "if", "else", "while", "return"};
 const size_t num_keywords = sizeof(keywords) / sizeof(keywords[0]);
 
-const char *punctuators = "<>(){};=<>++";
+const char *punctuators = "<>(){}[];=<>,+-*/:";
 
 void printToken(Token *token) {
   const char *type_str = "UNKNOWN";
