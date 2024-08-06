@@ -49,7 +49,7 @@ void printToken(Token *token) {
   default:
     break;
   }
-  printf("%s\t%s\n", type_str, token->value);
+  printf("%-20s%s\n", type_str, token->value);
 }
 
 int isKeyword(const char *value) {
