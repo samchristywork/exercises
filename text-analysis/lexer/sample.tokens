@@ -1,0 +1,27 @@
+KEYWORD             int
+IDENTIFIER          main
+PUNCTUATOR          (
+PUNCTUATOR          )
+PUNCTUATOR          {
+KEYWORD             for
+PUNCTUATOR          (
+KEYWORD             int
+IDENTIFIER          i
+PUNCTUATOR          =
+CONSTANT            0
+PUNCTUATOR          ;
+IDENTIFIER          i
+PUNCTUATOR          <
+CONSTANT            10
+PUNCTUATOR          ;
+IDENTIFIER          i
+PUNCTUATOR          +=
+PUNCTUATOR          )
+PUNCTUATOR          {
+IDENTIFIER          printf
+PUNCTUATOR          (
+STRING_LITERAL      "Hello, World!\n"
+PUNCTUATOR          )
+PUNCTUATOR          ;
+PUNCTUATOR          }
+PUNCTUATOR          }
