@@ -75,7 +75,7 @@ IDENTIFIER          char
 PUNCTUATOR          *
 IDENTIFIER          punctuators
 PUNCTUATOR          =
-STRING_LITERAL      "<>(){}[];=<>,+-*/:!&|.?"
+STRING_LITERAL      "<>(){}[];=<>,+-*/:!&|.?\\%"
 PUNCTUATOR          ;
 IDENTIFIER          void
 IDENTIFIER          printToken
