@@ -23,7 +23,7 @@ typedef struct {
 const char *keywords[] = {"int", "for", "if", "else", "while", "return"};
 const size_t num_keywords = sizeof(keywords) / sizeof(keywords[0]);
 
-const char *punctuators = "<>(){}[];=<>,+-*/:!&|.?\\%";
+const char *punctuators = "<>(){}[];=<>,+-*/:!&|.?%";
 
 void printToken(Token *token) {
   const char *type_str = "UNKNOWN";
@@ -105,6 +105,9 @@ void tokenize(const char *fileName) {
       currentToken.value[index++] = ch;
       while ((ch = fgetc(fp)) != EOF && ch != '"') {
         currentToken.value[index++] = ch;
+        if (ch == '\\') {
+          currentToken.value[index++] = fgetc(fp);
+        }
       }
       if (ch == '"') {
         currentToken.value[index++] = ch;
