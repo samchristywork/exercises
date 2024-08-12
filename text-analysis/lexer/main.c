@@ -1,9 +1,8 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-
-#define MAX_TOKEN_LEN 100
 
 typedef enum {
   KEYWORD,
@@ -17,7 +16,8 @@ typedef enum {
 
 typedef struct {
   TokenType type;
-  char value[MAX_TOKEN_LEN];
+  int start;
+  int end;
 } Token;
 
 const char *keywords[] = {"int", "for", "if", "else", "while", "return"};
@@ -25,7 +25,7 @@ const size_t num_keywords = sizeof(keywords) / sizeof(keywords[0]);
 
 const char *punctuators = "<>(){}[];=<>,+-*/:!&|.?%";
 
-void printToken(Token *token) {
+void printToken(Token *token, const char *source) {
   const char *type_str = "UNKNOWN";
   switch (token->type) {
   case KEYWORD:
@@ -49,7 +49,8 @@ void printToken(Token *token) {
   default:
     break;
   }
-  printf("%-20s%s\n", type_str, token->value);
+  printf("%-20s%.*s\n", type_str, token->end - token->start,
+         source + token->start);
 }
 
 int isKeyword(const char *value) {
@@ -61,93 +62,92 @@ int isKeyword(const char *value) {
   return false;
 }
 
-void tokenize(const char *fileName) {
-  FILE *fp = fopen(fileName, "r");
-  if (!fp) {
-    fprintf(stderr, "Could not open file %s\n", fileName);
-    return;
-  }
-
-  char ch;
+void tokenize(const char *source) {
+  int length = strlen(source);
   Token currentToken;
   int index = 0;
+  int start = 0;
 
-  while ((ch = fgetc(fp)) != EOF) {
+  while (index < length) {
+    char ch = source[index];
+
     if (isspace(ch)) {
+      index++;
       continue;
     }
 
-    index = 0;
+    start = index;
     if (isalpha(ch) || ch == '_') {
       do {
-        currentToken.value[index++] = ch;
-      } while (isalnum(ch = fgetc(fp)) || ch == '_');
+        index++;
+      } while (isalnum(source[index]) || source[index] == '_');
 
-      ungetc(ch, fp);
-      currentToken.value[index] = '\0';
-      currentToken.type = isKeyword(currentToken.value) ? KEYWORD : IDENTIFIER;
-
-    } else if (ch == '#') {
-      while ((ch = fgetc(fp)) != EOF && ch != '\n') {
-      }
-      continue;
+      currentToken.start = start;
+      currentToken.end = index;
+      char value[100];
+      snprintf(value, index - start + 1, "%s", source + start);
+      currentToken.type = isKeyword(value) ? KEYWORD : IDENTIFIER;
 
     } else if (isdigit(ch)) {
       do {
-        currentToken.value[index++] = ch;
-      } while (isdigit(ch = fgetc(fp)));
+        index++;
+      } while (isdigit(source[index]));
 
-      ungetc(ch, fp);
-      currentToken.value[index] = '\0';
+      currentToken.start = start;
+      currentToken.end = index;
       currentToken.type = CONSTANT;
 
     } else if (ch == '"') {
-      currentToken.value[index++] = ch;
-      while ((ch = fgetc(fp)) != EOF && ch != '"') {
-        currentToken.value[index++] = ch;
-        if (ch == '\\') {
-          currentToken.value[index++] = fgetc(fp);
+      index++;
+      while (source[index] != '"' && index < length) {
+        if (source[index] == '\\') {
+          index++;
         }
+        index++;
       }
-      if (ch == '"') {
-        currentToken.value[index++] = ch;
+      if (source[index] == '"') {
+        index++;
       }
-      currentToken.value[index] = '\0';
+
+      currentToken.start = start;
+      currentToken.end = index;
       currentToken.type = STRING_LITERAL;
 
     } else if (ch == '\'') {
-      currentToken.value[index++] = ch;
-      while ((ch = fgetc(fp)) != EOF && ch != '\'') {
-        currentToken.value[index++] = ch;
-        if (ch == '\\') {
-          currentToken.value[index++] = fgetc(fp);
+      index++;
+      while (source[index] != '\'' && index < length) {
+        if (source[index] == '\\') {
+          index++;
         }
+        index++;
       }
-      if (ch == '\'') {
-        currentToken.value[index++] = ch;
+      if (source[index] == '\'') {
+        index++;
       }
-      currentToken.value[index] = '\0';
+
+      currentToken.start = start;
+      currentToken.end = index;
       currentToken.type = CHARACTER_CONSTANT;
 
     } else if (strchr(punctuators, ch) != NULL) {
-      currentToken.value[0] = ch;
-      currentToken.value[1] = '\0';
+      index++;
+      currentToken.start = start;
+      currentToken.end = index;
       currentToken.type = PUNCTUATOR;
-
-      if ((ch == '+' && (ch = fgetc(fp)) == '+') || (ch = fgetc(fp)) == '=') {
-        strcat(currentToken.value, "=");
-      } else {
-        ungetc(ch, fp);
+      // TODO: Handle compound punctuators separately
+      if ((ch == '+' && source[index] == '+') || (source[index] == '=')) {
+        index++;
+        currentToken.end = index;
       }
 
     } else {
-      currentToken.value[0] = ch;
-      currentToken.value[1] = '\0';
+      index++;
+      currentToken.start = start;
+      currentToken.end = index;
       currentToken.type = UNKNOWN;
     }
-    printToken(&currentToken);
+    printToken(&currentToken, source);
   }
-  fclose(fp);
 }
 
 void printUsage(const char *programName) {
@@ -163,5 +163,24 @@ int main(int argc, char *argv[]) {
   }
 
   const char *fileName = argv[1];
-  tokenize(fileName);
+
+  FILE *fp = fopen(fileName, "r");
+  if (!fp) {
+    fprintf(stderr, "Could not open file %s\n", fileName);
+    return 1;
+  }
+
+  fseek(fp, 0, SEEK_END);
+  long fsize = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  char *source = malloc(fsize + 1);
+  fread(source, 1, fsize, fp);
+  source[fsize] = '\0';
+
+  fclose(fp);
+
+  tokenize(source);
+
+  free(source);
 }
