@@ -5,15 +5,9 @@ IDENTIFIER          stdio
 PUNCTUATOR          .
 IDENTIFIER          h
 PUNCTUATOR          >
-PUNCTUATOR          /
-PUNCTUATOR          /
-IDENTIFIER          This
-IDENTIFIER          is
-IDENTIFIER          a
-IDENTIFIER          comment
-PUNCTUATOR          /
-PUNCTUATOR          *
-PUNCTUATOR          *
+SINGLE_LINE_COMMENT // This is a comment
+MULTI_LINE_COMMENT  /*
+ * 
 IDENTIFIER          This
 IDENTIFIER          is
 IDENTIFIER          a
