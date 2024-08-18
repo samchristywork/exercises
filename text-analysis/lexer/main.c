@@ -11,6 +11,7 @@ typedef enum {
   STRING_LITERAL,
   CHARACTER_CONSTANT,
   SINGLE_LINE_COMMENT,
+  MULTI_LINE_COMMENT,
   PUNCTUATOR,
   UNKNOWN
 } TokenType;
@@ -46,6 +47,9 @@ void printToken(Token *token, const char *source) {
     break;
   case SINGLE_LINE_COMMENT:
     type_str = "SINGLE_LINE_COMMENT";
+    break;
+  case MULTI_LINE_COMMENT:
+    type_str = "MULTI_LINE_COMMENT";
     break;
   case PUNCTUATOR:
     type_str = "PUNCTUATOR";
@@ -142,6 +146,20 @@ void tokenize(const char *source) {
       currentToken.start = start;
       currentToken.end = index;
       currentToken.type = SINGLE_LINE_COMMENT;
+
+    } else if (ch == '/' && source[index + 1] == '*') {
+      index += 2;
+      while (index < length) {
+        index++;
+        if (source[index] == '*' && source[index + 1] == '/') {
+          index += 2;
+          break;
+        }
+      }
+
+      currentToken.start = start;
+      currentToken.end = index;
+      currentToken.type = MULTI_LINE_COMMENT;
 
     } else if (strchr(punctuators, ch) != NULL) {
       index++;

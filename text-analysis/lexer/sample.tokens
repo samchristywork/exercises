@@ -7,16 +7,8 @@ IDENTIFIER          h
 PUNCTUATOR          >
 SINGLE_LINE_COMMENT // This is a comment
 MULTI_LINE_COMMENT  /*
- * 
-IDENTIFIER          This
-IDENTIFIER          is
-IDENTIFIER          a
-IDENTIFIER          multi
-PUNCTUATOR          -
-IDENTIFIER          line
-IDENTIFIER          comment
-PUNCTUATOR          *
-PUNCTUATOR          /
+ * This is a multi-line comment
+ */
 KEYWORD             int
 IDENTIFIER          main
 PUNCTUATOR          (
