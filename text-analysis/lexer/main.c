@@ -70,11 +70,13 @@ int isKeyword(const char *value) {
   return false;
 }
 
-void tokenize(const char *source) {
+Token *tokenize(const char *source, int *numTokens) {
   int length = strlen(source);
-  Token currentToken;
+  // TODO: Use dynamic memory allocation
+  Token *tokens = malloc(100 * sizeof(Token));
   int index = 0;
   int start = 0;
+  int currentIdx = 0;
 
   while (index < length) {
     char ch = source[index];
@@ -90,20 +92,20 @@ void tokenize(const char *source) {
         index++;
       } while (isalnum(source[index]) || source[index] == '_');
 
-      currentToken.start = start;
-      currentToken.end = index;
+      tokens[currentIdx].start = start;
+      tokens[currentIdx].end = index;
       char value[100];
       snprintf(value, index - start + 1, "%s", source + start);
-      currentToken.type = isKeyword(value) ? KEYWORD : IDENTIFIER;
+      tokens[currentIdx].type = isKeyword(value) ? KEYWORD : IDENTIFIER;
 
     } else if (isdigit(ch)) {
       do {
         index++;
       } while (isdigit(source[index]));
 
-      currentToken.start = start;
-      currentToken.end = index;
-      currentToken.type = CONSTANT;
+      tokens[currentIdx].start = start;
+      tokens[currentIdx].end = index;
+      tokens[currentIdx].type = CONSTANT;
 
     } else if (ch == '"') {
       index++;
@@ -117,9 +119,9 @@ void tokenize(const char *source) {
         index++;
       }
 
-      currentToken.start = start;
-      currentToken.end = index;
-      currentToken.type = STRING_LITERAL;
+      tokens[currentIdx].start = start;
+      tokens[currentIdx].end = index;
+      tokens[currentIdx].type = STRING_LITERAL;
 
     } else if (ch == '\'') {
       index++;
@@ -133,9 +135,9 @@ void tokenize(const char *source) {
         index++;
       }
 
-      currentToken.start = start;
-      currentToken.end = index;
-      currentToken.type = CHARACTER_CONSTANT;
+      tokens[currentIdx].start = start;
+      tokens[currentIdx].end = index;
+      tokens[currentIdx].type = CHARACTER_CONSTANT;
 
     } else if (ch == '/' && source[index + 1] == '/') {
       index += 2;
@@ -143,9 +145,9 @@ void tokenize(const char *source) {
         index++;
       }
 
-      currentToken.start = start;
-      currentToken.end = index;
-      currentToken.type = SINGLE_LINE_COMMENT;
+      tokens[currentIdx].start = start;
+      tokens[currentIdx].end = index;
+      tokens[currentIdx].type = SINGLE_LINE_COMMENT;
 
     } else if (ch == '/' && source[index + 1] == '*') {
       index += 2;
@@ -157,29 +159,34 @@ void tokenize(const char *source) {
         }
       }
 
-      currentToken.start = start;
-      currentToken.end = index;
-      currentToken.type = MULTI_LINE_COMMENT;
+      tokens[currentIdx].start = start;
+      tokens[currentIdx].end = index;
+      tokens[currentIdx].type = MULTI_LINE_COMMENT;
 
     } else if (strchr(punctuators, ch) != NULL) {
       index++;
-      currentToken.start = start;
-      currentToken.end = index;
-      currentToken.type = PUNCTUATOR;
+      tokens[currentIdx].start = start;
+      tokens[currentIdx].end = index;
+      tokens[currentIdx].type = PUNCTUATOR;
       // TODO: Handle compound punctuators separately
       if ((ch == '+' && source[index] == '+') || (source[index] == '=')) {
         index++;
-        currentToken.end = index;
+        tokens[currentIdx].end = index;
       }
 
     } else {
       index++;
-      currentToken.start = start;
-      currentToken.end = index;
-      currentToken.type = UNKNOWN;
+      tokens[currentIdx].start = start;
+      tokens[currentIdx].end = index;
+      tokens[currentIdx].type = UNKNOWN;
     }
-    printToken(&currentToken, source);
+    // TODO
+    currentIdx++;
+    *numTokens = currentIdx;
+    //printToken(&currentToken, source);
   }
+
+  return tokens;
 }
 
 void printUsage(const char *programName) {
