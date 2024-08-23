@@ -190,36 +190,56 @@ Token *tokenize(const char *source, int *numTokens) {
 }
 
 void printUsage(const char *programName) {
-  printf("Usage: %s <filename>\n", programName);
-  printf(
-      "Tokenizes the given C source file and prints tokens to the console.\n");
+  printf("Usage: %s [options] <filename>\n", programName);
+  printf("Options:\n");
+  printf("  -h, --help\t\tPrint this message\n");
+  printf("  -i  --highlight\tPrint out highlighted source code\n");
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
+  if (argc < 2) {
     printUsage(argv[0]);
     return 1;
   }
 
-  const char *fileName = argv[1];
+  char *filename = NULL;
+  bool highlight = false;
 
-  FILE *fp = fopen(fileName, "r");
-  if (!fp) {
-    fprintf(stderr, "Could not open file %s\n", fileName);
-    return 1;
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+      printUsage(argv[0]);
+      return 0;
+    } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--highlight") == 0) {
+      highlight = true;
+    } else {
+      filename = argv[i];
+    }
   }
 
-  fseek(fp, 0, SEEK_END);
-  long fsize = ftell(fp);
-  fseek(fp, 0, SEEK_SET);
+  if (filename) {
+    FILE *fp = fopen(filename, "r");
+    if (!fp) {
+      fprintf(stderr, "Could not open file %s\n", filename);
+      return 1;
+    }
 
-  char *source = malloc(fsize + 1);
-  fread(source, 1, fsize, fp);
-  source[fsize] = '\0';
+    fseek(fp, 0, SEEK_END);
+    long fsize = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
 
-  fclose(fp);
+    char *source = malloc(fsize + 1);
+    fread(source, 1, fsize, fp);
+    source[fsize] = '\0';
 
-  tokenize(source);
+    fclose(fp);
 
-  free(source);
+    int numTokens = 0;
+    Token *tokens = tokenize(source, &numTokens);
+    for (int i = 0; i < numTokens; i++) {
+      printToken(&tokens[i], source);
+    }
+    free(tokens);
+
+    free(source);
+  }
 }
