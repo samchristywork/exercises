@@ -71,9 +71,10 @@ int isKeyword(const char *value) {
 }
 
 Token *tokenize(const char *source, int *numTokens) {
+  int tokensCapacity = 100;
+  Token *tokens = malloc(tokensCapacity * sizeof(Token));
+
   int length = strlen(source);
-  // TODO: Use dynamic memory allocation
-  Token *tokens = malloc(100 * sizeof(Token));
   int index = 0;
   int start = 0;
   int currentIdx = 0;
@@ -180,10 +181,12 @@ Token *tokenize(const char *source, int *numTokens) {
       tokens[currentIdx].end = index;
       tokens[currentIdx].type = UNKNOWN;
     }
-    // TODO
     currentIdx++;
     *numTokens = currentIdx;
-    //printToken(&currentToken, source);
+    if (currentIdx >= tokensCapacity) {
+      tokensCapacity *= 2;
+      tokens = realloc(tokens, tokensCapacity * sizeof(Token));
+    }
   }
 
   return tokens;
