@@ -16,6 +16,10 @@ typedef enum {
   UNKNOWN
 } TokenType;
 
+const char *colorCodes[] = {"\033[0;31m", "\033[0;32m", "\033[0;33m",
+                            "\033[0;34m", "\033[0;35m", "\033[0;36m",
+                            "\033[0;37m", "\033[0;38m", "\033[0;39m"};
+
 typedef struct {
   TokenType type;
   int start;
@@ -27,7 +31,7 @@ const size_t num_keywords = sizeof(keywords) / sizeof(keywords[0]);
 
 const char *punctuators = "<>(){}[];=<>,+-*/:!&|.?%";
 
-void printToken(Token *token, const char *source) {
+void printTokenData(Token *token, const char *source) {
   const char *type_str = "UNKNOWN";
   switch (token->type) {
   case KEYWORD:
@@ -58,6 +62,12 @@ void printToken(Token *token, const char *source) {
     break;
   }
   printf("%-20s%.*s\n", type_str, token->end - token->start,
+         source + token->start);
+}
+
+void printHighlightedToken(Token *token, const char *source) {
+  const char *color = colorCodes[token->type];
+  printf("%s%.*s\033[0m", color, token->end - token->start,
          source + token->start);
 }
 
@@ -212,7 +222,8 @@ int main(int argc, char *argv[]) {
     if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
       printUsage(argv[0]);
       return 0;
-    } else if (strcmp(argv[i], "-i") == 0 || strcmp(argv[i], "--highlight") == 0) {
+    } else if (strcmp(argv[i], "-i") == 0 ||
+               strcmp(argv[i], "--highlight") == 0) {
       highlight = true;
     } else {
       filename = argv[i];
@@ -238,11 +249,18 @@ int main(int argc, char *argv[]) {
 
     int numTokens = 0;
     Token *tokens = tokenize(source, &numTokens);
-    for (int i = 0; i < numTokens; i++) {
-      printToken(&tokens[i], source);
-    }
-    free(tokens);
 
+    if (highlight) {
+      for (int i = 0; i < numTokens; i++) {
+        printHighlightedToken(&tokens[i], source);
+      }
+    } else {
+      for (int i = 0; i < numTokens; i++) {
+        printTokenData(&tokens[i], source);
+      }
+    }
+
+    free(tokens);
     free(source);
   }
 }
