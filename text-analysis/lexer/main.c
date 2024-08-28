@@ -252,6 +252,11 @@ int main(int argc, char *argv[]) {
 
     if (highlight) {
       for (int i = 0; i < numTokens; i++) {
+        if (i > 0) {
+          Token *prev = &tokens[i - 1];
+          Token *current = &tokens[i];
+          fwrite(source + prev->end, 1, current->start - prev->end, stdout);
+        }
         printHighlightedToken(&tokens[i], source);
       }
     } else {
