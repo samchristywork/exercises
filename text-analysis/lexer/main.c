@@ -26,7 +26,14 @@ typedef struct {
   int end;
 } Token;
 
-const char *keywords[] = {"int", "for", "if", "else", "while", "return"};
+const char *keywords[] = {"auto",     "break",   "case",   "char",     "const",
+                          "continue", "default", "do",     "double",   "else",
+                          "enum",     "extern",  "float",  "for",      "goto",
+                          "if",       "int",     "long",   "register", "return",
+                          "short",    "signed",  "sizeof", "static",   "struct",
+                          "switch",   "typedef", "union",  "unsigned", "void",
+                          "volatile", "while"};
+
 const size_t num_keywords = sizeof(keywords) / sizeof(keywords[0]);
 
 const char *punctuators = "<>(){}[];=<>,+-*/:!&|.?%";
