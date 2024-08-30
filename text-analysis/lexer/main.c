@@ -16,9 +16,9 @@ typedef enum {
   UNKNOWN
 } TokenType;
 
-const char *colorCodes[] = {"\033[0;31m", "\033[0;32m", "\033[0;33m",
-                            "\033[0;34m", "\033[0;35m", "\033[0;36m",
-                            "\033[0;37m", "\033[0;38m", "\033[0;39m"};
+const char *colorCodes[] = {"\033[0;31m", "\033[0;37m", "\033[0;33m",
+                            "\033[0;32m", "\033[0;35m", "\033[0;34m",
+                            "\033[0;34m", "\033[0;36m", "\033[0;38m"};
 
 typedef struct {
   TokenType type;
