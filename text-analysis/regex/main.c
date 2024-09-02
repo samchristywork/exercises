@@ -39,8 +39,27 @@ bool match(const char *pattern, const char *text) {
   return false;
 }
 
+#ifdef TEST
+#include <regex.h>
+
+void testPattern(const char *pattern, const char *text) {
+  regex_t re;
+  regcomp(&re, pattern, REG_EXTENDED);
+  bool expected = regexec(&re, text, 0, NULL, 0) == 0;
+  bool actual = match(pattern, text);
+  if (expected != actual) {
+    printf("pattern: %s, text: %s, expected: %s, actual: %s\n", pattern, text,
+           expected ? "true" : "false", actual ? "true" : "false");
   }
 }
 
 int main() {
+  testPattern("a", "This is a sentence.");
+  testPattern("a.*e", "This is a sentence.");
+  testPattern("^T", "This is a sentence.");
+  testPattern("o$", "Hello");
 }
+#else
+int main() {
+}
+#endif
