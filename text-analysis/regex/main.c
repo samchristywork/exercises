@@ -9,6 +9,10 @@ bool matchHere(const char *pattern, const char *text) {
   if (*pattern == '\0')
     return true;
 
+  if (*pattern == '$' && *(pattern + 1) == '\0') {
+    return *text == '\0';
+  }
+
   if (*(pattern + 1) == '*') {
     do {
       if (matchHere(pattern + 2, text)) {
@@ -58,6 +62,7 @@ int main() {
   testPattern("a.*e", "This is a sentence.");
   testPattern("^T", "This is a sentence.");
   testPattern("o$", "Hello");
+  testPattern("o$o", "Hello");
 }
 #else
 int main() {
