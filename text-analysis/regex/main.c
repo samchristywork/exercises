@@ -65,6 +65,25 @@ int main() {
   testPattern("o$o", "Hello");
 }
 #else
-int main() {
+#include <string.h>
+
+void usage(char *name) {
+  printf("Usage: %s pattern\n", name);
+}
+
+int main(int argc, char *argv[]) {
+  if (argc != 2) {
+    usage(argv[0]);
+    return 1;
+  }
+
+  char *pattern = argv[1];
+  char text[1024];
+  while (fgets(text, sizeof(text), stdin) != NULL) {
+    text[strcspn(text, "\n")] = '\0';
+    if (match(pattern, text)) {
+      printf("%s\n", text);
+    }
+  }
 }
 #endif
