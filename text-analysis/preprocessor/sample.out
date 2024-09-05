@@ -1,0 +1,5 @@
+
+int main() {
+  printf("Max is greater than 50\n");
+  printf("Area: %f\n", (3.14159 * (5) * (5)));
+}

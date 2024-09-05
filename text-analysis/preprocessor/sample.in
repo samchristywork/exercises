@@ -1,0 +1,12 @@
+#define MAX 100
+#define AREA(x) (PI * (x) * (x))
+#define PI 3.14159
+
+int main() {
+#if MAX > 50
+  printf("Max is greater than 50\n");
+#else
+  printf("Max is less than or equal to 50\n");
+#endif
+  printf("Area: %f\n", AREA(5));
+}
