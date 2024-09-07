@@ -29,5 +29,26 @@ void printSymbols() {
   }
 }
 
+char *getName(char *text) {
+  char *name = malloc(1024);
+  sscanf(text, "#define %s", name);
+  return name;
+}
+
+char *getValue(char *text) {
+  char *value = malloc(1024);
+  char *p=text;
+  while (*p != ' ') {
+    p++;
+  }
+  p++;
+  while (*p != ' ') {
+    p++;
+  }
+  p++;
+  strcpy(value, p);
+  return value;
+}
+
 int main(int argc, char *argv[]) {
 }
