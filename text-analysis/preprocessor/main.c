@@ -29,6 +29,38 @@ void printSymbols() {
   }
 }
 
+char *substituteSymbols(char *text) {
+  char *subText = malloc(1024);
+  strcpy(subText, text);
+
+  for (int i = 0; i < 100; i++) {
+    if (symbols[i].name == NULL) {
+      return subText;
+    }
+
+    char *pos = strstr(subText, symbols[i].name);
+    if (pos != NULL) {
+      char *newText = malloc(1024);
+      strcpy(newText, subText);
+      pos = strstr(newText, symbols[i].name);
+      int posIndex = pos - newText;
+      int nameLength = strlen(symbols[i].name);
+      int valueLength = strlen(symbols[i].value);
+      int newLength = strlen(newText) + valueLength - nameLength;
+      char *temp = malloc(newLength);
+      strncpy(temp, newText, posIndex);
+      strcat(temp, symbols[i].value);
+      strcat(temp, newText + posIndex + nameLength);
+      strcpy(newText, temp);
+      free(temp);
+      free(subText);
+      subText = newText;
+    }
+  }
+
+  return subText;
+}
+
 char *getName(char *text) {
   char *name = malloc(1024);
   sscanf(text, "#define %s", name);
