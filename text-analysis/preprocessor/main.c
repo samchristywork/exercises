@@ -82,5 +82,39 @@ char *getValue(char *text) {
   return value;
 }
 
+void usage(char *name) {
+  printf("Usage: %s file\n", name);
+}
+
 int main(int argc, char *argv[]) {
+  if (argc != 2) {
+    usage(argv[0]);
+    return 1;
+  }
+
+  char *filename = argv[1];
+  FILE *f = fopen(filename, "r");
+  char text[1024];
+  while (fgets(text, sizeof(text), f) != NULL) {
+    text[strcspn(text, "\n")] = '\0';
+
+    if (strlen(text) == 0) {
+      continue;
+    }
+
+    char *subText = substituteSymbols(text);
+
+    if (strncmp(subText, "#define", 7) == 0) {
+      addSymbol(getName(subText), getValue(subText));
+      continue;
+    }
+
+    printf("%s\n", subText);
+
+    free(subText);
+  }
+
+  printf("\nSymbols:\n");
+  printSymbols();
+  fclose(f);
 }
