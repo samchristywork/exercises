@@ -86,16 +86,10 @@ void usage(char *name) {
   printf("Usage: %s file\n", name);
 }
 
-int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    usage(argv[0]);
-    return 1;
-  }
-
-  char *filename = argv[1];
-  FILE *f = fopen(filename, "r");
+int main() {
   char text[1024];
-  while (fgets(text, sizeof(text), f) != NULL) {
+
+  while (fgets(text, sizeof(text), stdin) != NULL) {
     text[strcspn(text, "\n")] = '\0';
 
     if (strlen(text) == 0) {
@@ -106,8 +100,14 @@ int main(int argc, char *argv[]) {
 
     if (strncmp(subText, "#define", 7) == 0) {
       addSymbol(getName(subText), getValue(subText));
+      free(subText);
       continue;
     }
+
+    // if (subText[0] == '#') {
+    //   free(subText);
+    //   continue;
+    // }
 
     printf("%s\n", subText);
 
@@ -116,5 +116,4 @@ int main(int argc, char *argv[]) {
 
   printf("\nSymbols:\n");
   printSymbols();
-  fclose(f);
 }
