@@ -46,7 +46,7 @@ char *substituteSymbols(char *text) {
 
       char *newText = malloc(newLength);
       strncpy(newText, subText, posIndex);
-      newText[posIndex] = '\0'; // Ensure null termination
+      newText[posIndex] = '\0';
       strcat(newText, symbols[i].value);
       strcat(newText, subText + posIndex + nameLength);
 
@@ -92,7 +92,11 @@ int main() {
     char *subText = substituteSymbols(text);
 
     if (strncmp(subText, "#define", 7) == 0) {
-      addSymbol(getName(subText), getValue(subText));
+      char *name = getName(subText);
+      char *value = getValue(subText);
+      addSymbol(name, value);
+      free(name);
+      free(value);
       free(subText);
       continue;
     }
@@ -104,4 +108,6 @@ int main() {
 
   printf("\nSymbols:\n");
   printSymbols();
+
+  return 0;
 }
