@@ -1,113 +1,171 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
-typedef struct symbol {
-  char *name;
-  char *value;
-} symbol;
+typedef enum {
+  TOKEN_DEFINE,
+  TOKEN_IF,
+  TOKEN_ELSE,
+  TOKEN_ENDIF,
+  TOKEN_TEXT,
+} TokenType;
 
-symbol symbols[100];
+typedef struct Token {
+  char *start;
+  size_t length;
+  TokenType type;
+} Token;
 
-void addSymbol(char *name, char *value) {
-  printf("\t\tAdding symbol: %s = %s\n", name, value);
-  for (int i = 0; i < 100; i++) {
-    if (symbols[i].name == NULL) {
-      symbols[i].name = strdup(name);
-      symbols[i].value = strdup(value);
-      return;
-    }
+char *readStdin() {
+  size_t bufferSize = 1024;
+  size_t bytesRead = 0;
+  char *buffer = malloc(bufferSize);
+
+  if (buffer == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    return NULL;
   }
-}
 
-void printSymbols() {
-  for (int i = 0; i < 100; i++) {
-    if (symbols[i].name == NULL) {
-      return;
-    }
-    printf("%s = %s\n", symbols[i].name, symbols[i].value);
-  }
-}
+  while (1) {
+    size_t result = fread(buffer + bytesRead, 1, bufferSize - bytesRead, stdin);
+    bytesRead += result;
 
-char *substituteSymbols(char *text) {
-  char *subText = strdup(text);
-
-  for (int i = 0; symbols[i].name != NULL; i++) {
-    while (1) {
-      char *pos = strstr(subText, symbols[i].name);
-      if (pos == NULL) {
+    if (result < bufferSize - bytesRead) {
+      if (feof(stdin)) {
         break;
+      } else if (ferror(stdin)) {
+        fprintf(stderr, "Error reading from stdin\n");
+        free(buffer);
+        return NULL;
       }
+    }
 
-      int posIndex = pos - subText;
-      int nameLength = strlen(symbols[i].name);
-      int valueLength = strlen(symbols[i].value);
-      int newLength = strlen(subText) + valueLength - nameLength + 1;
-
-      char *newText = malloc(newLength);
-      strncpy(newText, subText, posIndex);
-      newText[posIndex] = '\0';
-      strcat(newText, symbols[i].value);
-      strcat(newText, subText + posIndex + nameLength);
-
-      free(subText);
-      subText = newText;
+    if (bytesRead >= bufferSize) {
+      bufferSize *= 2;
+      char *newBuffer = realloc(buffer, bufferSize);
+      if (newBuffer == NULL) {
+        fprintf(stderr, "Memory reallocation failed\n");
+        free(buffer);
+        return NULL;
+      }
+      buffer = newBuffer;
     }
   }
 
-  return subText;
+  if (bytesRead < bufferSize) {
+    buffer[bytesRead] = '\0';
+  } else {
+    char *newBuffer = realloc(buffer, bytesRead + 1);
+    if (newBuffer == NULL) {
+      fprintf(stderr, "Memory reallocation failed\n");
+      free(buffer);
+      return NULL;
+    }
+    buffer = newBuffer;
+    buffer[bytesRead] = '\0';
+  }
+
+  return buffer;
 }
 
-char *getName(char *text) {
-  char *name = malloc(1024);
-  sscanf(text, "#define %s", name);
-  return name;
+void printTokenType(TokenType type) {
+  switch (type) {
+    case TOKEN_DEFINE:
+      printf("TOKEN_DEFINE");
+      break;
+    case TOKEN_IF:
+      printf("TOKEN_IF");
+      break;
+    case TOKEN_ELSE:
+      printf("TOKEN_ELSE");
+      break;
+    case TOKEN_ENDIF:
+      printf("TOKEN_ENDIF");
+      break;
+    case TOKEN_TEXT:
+      printf("TOKEN_TEXT");
+      break;
+  }
 }
 
-char *getValue(char *text) {
-  char *value = malloc(1024);
-  char *p = text;
-  while (*p != ' ') p++;
-  p++;
-  while (*p != ' ') p++;
-  p++;
-  strcpy(value, p);
-  return value;
-}
-
-void usage(char *name) {
-  printf("Usage: %s file\n", name);
+void printTokenBody(Token token) {
+  for (int i=0; i<token.length; i++) {
+    printf("%c", token.start[i]);
+  }
+  printf("\n");
 }
 
 int main() {
-  char text[1024];
+  char *buffer = readStdin();
 
-  while (fgets(text, sizeof(text), stdin) != NULL) {
-    text[strcspn(text, "\n")] = '\0';
+  Token tokens[999];
+  int tokenCount = 0;
 
-    if (strlen(text) == 0) {
-      continue;
+  for (int i=0; i<strlen(buffer); i++) {
+    if (strncmp(buffer + i, "#define", 7) == 0) {
+      tokens[tokenCount].start = buffer + i;
+      while (buffer[i] != '\n') {
+        i++;
+      }
+      tokens[tokenCount].length = buffer + i - tokens[tokenCount].start;
+      tokens[tokenCount].type = TOKEN_DEFINE;
+      tokenCount++;
+    } else if (strncmp(buffer + i, "#if", 3) == 0) {
+      tokens[tokenCount].start = buffer + i;
+      while (buffer[i] != '\n') {
+        i++;
+      }
+      tokens[tokenCount].length = buffer + i - tokens[tokenCount].start;
+      tokens[tokenCount].type = TOKEN_IF;
+      tokenCount++;
+    } else if (strncmp(buffer + i, "#else", 5) == 0) {
+      tokens[tokenCount].start = buffer + i;
+      while (buffer[i] != '\n') {
+        i++;
+      }
+      tokens[tokenCount].length = buffer + i - tokens[tokenCount].start;
+      tokens[tokenCount].type = TOKEN_ELSE;
+      tokenCount++;
+    } else if (strncmp(buffer + i, "#endif", 6) == 0) {
+      tokens[tokenCount].start = buffer + i;
+      while (buffer[i] != '\n') {
+        i++;
+      }
+      tokens[tokenCount].length = buffer + i - tokens[tokenCount].start;
+      tokens[tokenCount].type = TOKEN_ENDIF;
+      tokenCount++;
+    } else {
+      tokens[tokenCount].start = buffer + i;
+      while (buffer[i] != '#') {
+        i++;
+      }
+      i--;
+      tokens[tokenCount].length = buffer + i - tokens[tokenCount].start;
+      tokens[tokenCount].type = TOKEN_TEXT;
+      tokenCount++;
     }
-
-    char *subText = substituteSymbols(text);
-
-    if (strncmp(subText, "#define", 7) == 0) {
-      char *name = getName(subText);
-      char *value = getValue(subText);
-      addSymbol(name, value);
-      free(name);
-      free(value);
-      free(subText);
-      continue;
-    }
-
-    printf("%s\n", subText);
-
-    free(subText);
   }
 
-  printf("\nSymbols:\n");
-  printSymbols();
+  for (int i=0; i<tokenCount; i++) {
+    Token token = tokens[i];
+    switch (token.type) {
+      case TOKEN_DEFINE:
+        printf("TOKEN_DEFINE: ");
+        break;
+      case TOKEN_IF:
+        printf("TOKEN_IF: ");
+        break;
+      case TOKEN_ELSE:
+        printf("TOKEN_ELSE: ");
+        break;
+      case TOKEN_ENDIF:
+        printf("TOKEN_ENDIF: ");
+        break;
+      case TOKEN_TEXT:
+        printf("TOKEN_TEXT: ");
+        break;
+    }
+  }
 
-  return 0;
+  free(buffer);
 }
