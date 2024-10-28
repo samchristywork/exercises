@@ -23,6 +23,54 @@ typedef struct Token {
   DefineDetails defineDetails;
 } Token;
 
+char *applyDefines(char *tokenBody, size_t length, Token *tokens, int tokenCount) {
+  size_t maxLength = length;
+  for (int i = 0; i < tokenCount; i++) {
+    if (tokens[i].type == TOKEN_DEFINE) {
+      maxLength += strlen(tokens[i].defineDetails.value) - (tokens[i].defineDetails.key ? strlen(tokens[i].defineDetails.key) : 0);
+    }
+  }
+
+  char *result = malloc(maxLength + 1);
+  if (!result) {
+    fprintf(stderr, "Memory allocation failed\n");
+    return NULL;
+  }
+  result[0] = '\0';
+
+  const char delim[] = " \t\n";
+  char *copy = strndup(tokenBody, length);
+  char *token = strtok(copy, delim);
+
+  while (token) {
+    int substituted = 0;
+    for (int i = 0; i < tokenCount; i++) {
+      if (tokens[i].type == TOKEN_DEFINE && strcmp(tokens[i].defineDetails.key, token) == 0) {
+        strcat(result, tokens[i].defineDetails.value);
+        strcat(result, " ");
+        substituted = 1;
+        break;
+      }
+    }
+
+    if (!substituted) {
+      strcat(result, token);
+      strcat(result, " ");
+    }
+
+    token = strtok(NULL, delim);
+  }
+
+  free(copy);
+
+  size_t res_len = strlen(result);
+  if (res_len > 0 && result[res_len - 1] == ' ') {
+    result[res_len - 1] = '\0';
+  }
+
+  return result;
+}
+
 char *readStdin() {
   size_t bufferSize = 1024;
   size_t bytesRead = 0;
@@ -189,6 +237,9 @@ int main() {
 
   for (int i = 0; i < tokenCount; i++) {
     Token token = tokens[i];
+    char *tokenBody = strndup(token.start, token.length);
+    char *substitutedBody = applyDefines(tokenBody, token.length, tokens, tokenCount);
+
     switch (token.type) {
       case TOKEN_DEFINE:
         printf("TOKEN_DEFINE: ");
@@ -207,6 +258,12 @@ int main() {
         printf("TOKEN_TEXT\n");
         break;
     }
+
+    printf("Original: %s\n", tokenBody);
+    printf("Substituted: %s\n", substitutedBody);
+
+    free(tokenBody);
+    free(substitutedBody);
   }
 
   for (int i = 0; i < tokenCount; i++) {
