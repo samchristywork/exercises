@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 typedef enum {
   TOKEN_DEFINE,
@@ -149,6 +150,34 @@ void printDefineDetails(DefineDetails *details) {
   printf("Value: %s\n", details->value ? details->value : "N/A");
 }
 
+bool evaluateIfCondition(char *tokenBody, size_t length, Token *tokens, int tokenCount) {
+  char *tokensCopy = strndup(tokenBody, length);
+  char *token = strtok(tokensCopy, " \t\n");
+
+  char *left = NULL;
+  char *right = NULL;
+  char *op = NULL;
+
+  while (token) {
+    if (left == NULL) {
+      left = token;
+    } else if (op == NULL) {
+      op = token;
+    } else if (right == NULL) {
+      right = token;
+    }
+
+    token = strtok(NULL, " \t\n");
+  }
+
+  if (left == NULL || op == NULL || right == NULL) {
+    fprintf(stderr, "Invalid if condition\n");
+    return false;
+  }
+  printf("%s %s %s\n", left, op, right);
+  return false;
+}
+
 int main() {
   char *buffer = readStdin();
 
@@ -242,25 +271,26 @@ int main() {
 
     switch (token.type) {
       case TOKEN_DEFINE:
-        printf("TOKEN_DEFINE: ");
         printDefineDetails(&token.defineDetails);
         break;
       case TOKEN_IF:
-        printf("TOKEN_IF\n");
+        if (evaluateIfCondition(substitutedBody+4, strlen(substitutedBody)-4, tokens, tokenCount)) {
+          // TODO
+        } else {
+          // TODO
+        }
         break;
       case TOKEN_ELSE:
-        printf("TOKEN_ELSE\n");
         break;
       case TOKEN_ENDIF:
-        printf("TOKEN_ENDIF\n");
         break;
       case TOKEN_TEXT:
-        printf("TOKEN_TEXT\n");
+        printf("%s\n", substitutedBody);
         break;
     }
 
-    printf("Original: %s\n", tokenBody);
-    printf("Substituted: %s\n", substitutedBody);
+    //printf("Original: %s\n", tokenBody);
+    //printf("Substituted: %s\n", substitutedBody);
 
     free(tokenBody);
     free(substitutedBody);
