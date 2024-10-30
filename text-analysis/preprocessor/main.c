@@ -174,7 +174,27 @@ bool evaluateIfCondition(char *tokenBody, size_t length, Token *tokens, int toke
     fprintf(stderr, "Invalid if condition\n");
     return false;
   }
-  printf("%s %s %s\n", left, op, right);
+
+  int leftValue = 0;
+  int rightValue = 0;
+
+  if (strncmp("<", op, 1) == 0) {
+    leftValue = atoi(left);
+    rightValue = atoi(right);
+    return leftValue < rightValue;
+  } else if (strncmp(">", op, 1) == 0) {
+    leftValue = atoi(left);
+    rightValue = atoi(right);
+    return leftValue > rightValue;
+  } else if (strncmp("==", op, 2) == 0) {
+    return strcmp(left, right) == 0;
+  } else if (strncmp("!=", op, 2) == 0) {
+    return strcmp(left, right) != 0;
+  } else {
+    fprintf(stderr, "Invalid operator\n");
+    return false;
+  }
+
   return false;
 }
 
