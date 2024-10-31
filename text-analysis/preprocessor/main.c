@@ -295,9 +295,19 @@ int main() {
         break;
       case TOKEN_IF:
         if (evaluateIfCondition(substitutedBody+4, strlen(substitutedBody)-4, tokens, tokenCount)) {
-          // TODO
+          i++;
+          char *tokenBody = strndup(tokens[i].start, tokens[i].length);
+          char *substitutedBody = applyDefines(tokenBody, tokens[i].length, tokens, tokenCount);
+          printf("%s\n", substitutedBody);
+          free(tokenBody);
+          free(substitutedBody);
+          while (tokens[i].type != TOKEN_ENDIF) {
+            i++;
+          }
         } else {
-          // TODO
+          i++;
+          i++;
+          printf("%s\n", substitutedBody);
         }
         break;
       case TOKEN_ELSE:
@@ -308,9 +318,6 @@ int main() {
         printf("%s\n", substitutedBody);
         break;
     }
-
-    //printf("Original: %s\n", tokenBody);
-    //printf("Substituted: %s\n", substitutedBody);
 
     free(tokenBody);
     free(substitutedBody);
