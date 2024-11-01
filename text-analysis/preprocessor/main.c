@@ -24,6 +24,35 @@ typedef struct Token {
   DefineDetails defineDetails;
 } Token;
 
+char *replaceAll(const char *str, const char *from, const char *to) {
+  size_t fromLen = strlen(from);
+  size_t toLen = strlen(to);
+
+  if (fromLen == 0) {
+    return strdup(str);
+  }
+
+  size_t resultSize = strlen(str) + 1;
+  char *result = malloc(resultSize);
+  if (!result) return NULL;
+  strcpy(result, "");
+
+  const char *p = str;
+  while ((p = strstr(p, from)) != NULL) {
+    resultSize += toLen - fromLen;
+    result = realloc(result, resultSize);
+    if (!result) return NULL;
+
+    strncat(result, str, p - str);
+    strcat(result, to);
+    str = p + fromLen;
+    p = str;
+  }
+  strcat(result, str);
+
+  return result;
+}
+
 char *applyDefines(char *tokenBody, size_t length, Token *tokens, int tokenCount) {
   size_t maxLength = length;
   for (int i = 0; i < tokenCount; i++) {
