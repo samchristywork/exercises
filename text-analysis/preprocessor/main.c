@@ -76,7 +76,48 @@ char *applyDefines(char *tokenBody, size_t length, Token *tokens, int tokenCount
     int substituted = 0;
     for (int i = 0; i < tokenCount; i++) {
       if (tokens[i].type == TOKEN_DEFINE && strcmp(tokens[i].defineDetails.key, token) == 0) {
-        strcat(result, tokens[i].defineDetails.value);
+        if (tokens[i].defineDetails.parameters == NULL) {
+          strcat(result, tokens[i].defineDetails.value);
+        } else {
+          printf("Found function-like macro\n");
+          char *params = tokens[i].defineDetails.parameters;
+          char *openParen = strstr(tokenBody, "(");
+          if (openParen) {
+            char *closeParen = strstr(openParen + 1, ")");
+            if (closeParen) {
+              char *args = strndup(openParen + 1, closeParen - openParen - 1);
+              char *arg, *paramCopy = strdup(params);
+              char *argPtrs[10];
+              int argCount = 0;
+
+              arg = strtok(args, ",");
+              while (arg) {
+                argPtrs[argCount++] = strdup(arg);
+                arg = strtok(NULL, ",");
+              }
+
+              char *valueCopy = strdup(tokens[i].defineDetails.value);
+              for (int j = 0; j < argCount; ++j) {
+                paramCopy = tokens[i].defineDetails.parameters;
+                char *param = strtok(paramCopy, ",");
+                for (int k = 0; k < j; ++k) {
+                  param = strtok(NULL, ",");
+                }
+                if (param) {
+                  char *substitutedValue = replaceAll(valueCopy, param, argPtrs[j]);
+                  free(valueCopy);
+                  valueCopy = substitutedValue;
+                }
+              }
+              strcat(result, valueCopy);
+
+              free(args);
+              free(valueCopy);
+              for (int j = 0; j < argCount; ++j)
+                free(argPtrs[j]);
+            }
+          }
+        }
         strcat(result, " ");
         substituted = 1;
         break;
