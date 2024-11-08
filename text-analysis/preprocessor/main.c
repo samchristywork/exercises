@@ -68,68 +68,87 @@ char *applyDefines(char *tokenBody, size_t length, Token *tokens, int tokenCount
   }
   result[0] = '\0';
 
-  const char delim[] = " \t\n";
   char *copy = strndup(tokenBody, length);
-  char *token = strtok(copy, delim);
+  char *cursor = copy;
 
-  while (token) {
-    int substituted = 0;
+  while (*cursor != '\0') {
+    char *tokenStart = cursor;
+    while (*cursor != ' ' && *cursor != '\t' && *cursor != '\n' && *cursor != '(' && *cursor != '\0') {
+      cursor++;
+    }
+
+    char *key = strndup(tokenStart, cursor - tokenStart);
+    bool substituted = false;
+
     for (int i = 0; i < tokenCount; i++) {
-      if (tokens[i].type == TOKEN_DEFINE && strcmp(tokens[i].defineDetails.key, token) == 0) {
+      if (tokens[i].type == TOKEN_DEFINE && strcmp(tokens[i].defineDetails.key, key) == 0) {
         if (tokens[i].defineDetails.parameters == NULL) {
           strcat(result, tokens[i].defineDetails.value);
+          substituted = true;
         } else {
-          printf("Found function-like macro\n");
-          char *params = tokens[i].defineDetails.parameters;
-          char *openParen = strstr(tokenBody, "(");
-          if (openParen) {
-            char *closeParen = strstr(openParen + 1, ")");
-            if (closeParen) {
-              char *args = strndup(openParen + 1, closeParen - openParen - 1);
-              char *arg, *paramCopy = strdup(params);
-              char *argPtrs[10];
-              int argCount = 0;
+          if (*cursor == '(') {
+            cursor++;
+            char *argsStart = cursor;
+            int brackets = 1;
+            while (brackets > 0 && *cursor != '\0') {
+              if (*cursor == '(') {
+                brackets++;
+              } else if (*cursor == ')') {
+                brackets--;
+              }
+              cursor++;
+            }
 
-              arg = strtok(args, ",");
-              while (arg) {
-                argPtrs[argCount++] = strdup(arg);
-                arg = strtok(NULL, ",");
+            if (brackets == 0) {
+              char *args = strndup(argsStart, (cursor - 1) - argsStart);
+              char *params = strdup(tokens[i].defineDetails.parameters);
+
+              char *arg, *argPtrs[10];
+              int argCount = 0;
+              char *param = strtok(params, ",");
+              char *argPiece = strtok(args, ",");
+
+              while (argPiece) {
+                argPtrs[argCount++] = strdup(argPiece);
+                argPiece = strtok(NULL, ",");
               }
 
               char *valueCopy = strdup(tokens[i].defineDetails.value);
               for (int j = 0; j < argCount; ++j) {
-                paramCopy = tokens[i].defineDetails.parameters;
-                char *param = strtok(paramCopy, ",");
-                for (int k = 0; k < j; ++k) {
-                  param = strtok(NULL, ",");
-                }
                 if (param) {
                   char *substitutedValue = replaceAll(valueCopy, param, argPtrs[j]);
                   free(valueCopy);
                   valueCopy = substitutedValue;
+                  param = strtok(NULL, ",");
                 }
               }
               strcat(result, valueCopy);
 
-              free(args);
               free(valueCopy);
-              for (int j = 0; j < argCount; ++j)
+              free(args);
+              free(params);
+              for (int j = 0; j < argCount; ++j) {
                 free(argPtrs[j]);
+              }
+              substituted = true;
             }
           }
         }
-        strcat(result, " ");
-        substituted = 1;
-        break;
+        free(key);
+        if (substituted) {
+          break;
+        }
       }
     }
 
     if (!substituted) {
-      strcat(result, token);
+      strncat(result, key, cursor - key);
       strcat(result, " ");
     }
 
-    token = strtok(NULL, delim);
+    if (*cursor != '\0') {
+      cursor++;
+    }
   }
 
   free(copy);
