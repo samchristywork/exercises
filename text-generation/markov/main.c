@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,13 +17,21 @@ char *read_file(FILE *f) {
   return data;
 }
 
-bool notAlpha(char *token) {
-  for (int i = 0; i < strlen(token); i++) {
-    if (!isalpha(token[i])) {
-      return true;
+char **tokenize(char *data, int *nTokens) {
+  char **tokens = malloc(sizeof(char *) * 10000);
+  char *token = strtok(data, " \n");
+  int count = 0;
+
+  while (token != NULL) {
+    tokens[count] = token;
+    for (int i = 0; i < strlen(token); i++) {
+      token[i] = tolower(token[i]);
     }
+    count++;
+    token = strtok(NULL, " \n");
   }
-  return false;
+  *nTokens = count;
+  return tokens;
 }
 
 int main() {
@@ -31,4 +40,7 @@ int main() {
   FILE *f = fopen("input.txt", "r");
   char *data = read_file(f);
   fclose(f);
+
+  int nTokens = 0;
+  char **tokens = tokenize(data, &nTokens);
 }
