@@ -34,6 +34,25 @@ char **tokenize(char *data, int *nTokens) {
   return tokens;
 }
 
+char *predict(char **tokens, int nTokens, char *word) {
+  char *nextWords[nTokens - 1];
+  int nextWordsCount = 0;
+
+  for (int i = 0; i < nTokens - 1; i++) {
+    if (strcmp(tokens[i], word) == 0) {
+      nextWords[nextWordsCount] = tokens[i + 1];
+      nextWordsCount++;
+    }
+  }
+
+  if (nextWordsCount == 0) {
+    return NULL;
+  }
+
+  int randomIndex = rand() % nextWordsCount;
+  return nextWords[randomIndex];
+}
+
 int main() {
   srand(time(NULL));
 
@@ -43,4 +62,17 @@ int main() {
 
   int nTokens = 0;
   char **tokens = tokenize(data, &nTokens);
+
+  char *word = "markov";
+
+  printf("%s ", word);
+  for (int i = 0; i < 100; i++) {
+    char *nextWord = predict(tokens, nTokens, word);
+    if (nextWord == NULL) {
+      break;
+    }
+    printf("%s ", nextWord);
+    word = nextWord;
+  }
+  printf("\n");
 }
