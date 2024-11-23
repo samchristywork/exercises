@@ -11,6 +11,10 @@ char *read_file(FILE *f) {
   fseek(f, 0, SEEK_SET);
 
   char *data = malloc(size + 1);
+  if (data == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(1);
+  }
   fread(data, 1, size, f);
   data[size] = '\0';
 
@@ -18,7 +22,13 @@ char *read_file(FILE *f) {
 }
 
 char **tokenize(char *data, int *nTokens) {
-  char **tokens = malloc(sizeof(char *) * 10000);
+  int capacity = 10000;
+  char **tokens = malloc(sizeof(char *) * capacity);
+  if (tokens == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(1);
+  }
+
   char *token = strtok(data, " \n");
   int count = 0;
 
@@ -30,6 +40,7 @@ char **tokenize(char *data, int *nTokens) {
     count++;
     token = strtok(NULL, " \n");
   }
+
   *nTokens = count;
   return tokens;
 }
@@ -57,6 +68,11 @@ int main() {
   srand(time(NULL));
 
   FILE *f = fopen("input.txt", "r");
+  if (f == NULL) {
+    fprintf(stderr, "Could not open file input.txt\n");
+    return 1;
+  }
+
   char *data = read_file(f);
   fclose(f);
 
