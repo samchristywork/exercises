@@ -22,7 +22,7 @@ char *read_file(FILE *f) {
 }
 
 char **tokenize(char *data, int *nTokens) {
-  int capacity = 10000;
+  int capacity = 1000;
   char **tokens = malloc(sizeof(char *) * capacity);
   if (tokens == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
@@ -33,8 +33,17 @@ char **tokenize(char *data, int *nTokens) {
   int count = 0;
 
   while (token != NULL) {
+    if (count >= capacity) {
+      capacity *= 2;
+      tokens = realloc(tokens, sizeof(char *) * capacity);
+      if (tokens == NULL) {
+        fprintf(stderr, "Memory reallocation failed\n");
+        exit(1);
+      }
+    }
+
     tokens[count] = token;
-    for (int i = 0; i < strlen(token); i++) {
+    for (int i = 0; token[i]; i++) {
       token[i] = tolower(token[i]);
     }
     count++;
@@ -46,7 +55,12 @@ char **tokenize(char *data, int *nTokens) {
 }
 
 char *predict(char **tokens, int nTokens, char *word) {
-  char *nextWords[nTokens - 1];
+  char **nextWords = malloc(sizeof(char *) * nTokens);
+  if (nextWords == NULL) {
+    fprintf(stderr, "Memory allocation failed\n");
+    exit(1);
+  }
+
   int nextWordsCount = 0;
 
   for (int i = 0; i < nTokens - 1; i++) {
