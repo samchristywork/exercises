@@ -70,12 +70,14 @@ char *predict(char **tokens, int nTokens, char *word) {
     }
   }
 
-  if (nextWordsCount == 0) {
-    return NULL;
+  char *result = NULL;
+  if (nextWordsCount > 0) {
+    int randomIndex = rand() % nextWordsCount;
+    result = nextWords[randomIndex];
   }
 
-  int randomIndex = rand() % nextWordsCount;
-  return nextWords[randomIndex];
+  free(nextWords);
+  return result;
 }
 
 int main() {
@@ -105,4 +107,7 @@ int main() {
     word = nextWord;
   }
   printf("\n");
+
+  free(tokens);
+  free(data);
 }
