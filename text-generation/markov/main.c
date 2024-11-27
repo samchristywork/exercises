@@ -80,6 +80,19 @@ char *predict(char **tokens, int nTokens, char *word) {
   return result;
 }
 
+void printText(const char *word, char **tokens, int nTokens) {
+  printf("%s ", word);
+  for (int i = 0; i < 100; i++) {
+    char *nextWord = predict(tokens, nTokens, word);
+    if (nextWord == NULL) {
+      break;
+    }
+    printf("%s ", nextWord);
+    word = nextWord;
+  }
+  printf("\n");
+}
+
 int main() {
   srand(time(NULL));
 
@@ -95,18 +108,9 @@ int main() {
   int nTokens = 0;
   char **tokens = tokenize(data, &nTokens);
 
-  char *word = "markov";
-
-  printf("%s ", word);
-  for (int i = 0; i < 100; i++) {
-    char *nextWord = predict(tokens, nTokens, word);
-    if (nextWord == NULL) {
-      break;
-    }
-    printf("%s ", nextWord);
-    word = nextWord;
+  for (int i = 0; i < 10; i++) {
+    printText("markov", tokens, nTokens);
   }
-  printf("\n");
 
   free(tokens);
   free(data);
