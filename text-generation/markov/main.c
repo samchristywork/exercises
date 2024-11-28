@@ -42,9 +42,14 @@ char **tokenize(char *data, int *nTokens) {
       }
     }
 
-    tokens[count] = token;
-    for (int i = 0; token[i]; i++) {
-      token[i] = tolower(token[i]);
+    tokens[count] = strdup(token);
+    if (tokens[count] == NULL) {
+      fprintf(stderr, "Memory allocation failed for token\n");
+      exit(1);
+    }
+
+    for (int i = 0; tokens[count][i]; i++) {
+      tokens[count][i] = tolower(tokens[count][i]);
     }
     count++;
     token = strtok(NULL, " \n");
@@ -54,7 +59,7 @@ char **tokenize(char *data, int *nTokens) {
   return tokens;
 }
 
-char *predict(char **tokens, int nTokens, char *word) {
+char *predict(char **tokens, int nTokens, const char *word) {
   char **nextWords = malloc(sizeof(char *) * nTokens);
   if (nextWords == NULL) {
     fprintf(stderr, "Memory allocation failed\n");
@@ -80,9 +85,9 @@ char *predict(char **tokens, int nTokens, char *word) {
   return result;
 }
 
-void printText(const char *word, char **tokens, int nTokens) {
+void printText(const char *word, int n, char **tokens, int nTokens) {
   printf("%s ", word);
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < n; i++) {
     char *nextWord = predict(tokens, nTokens, word);
     if (nextWord == NULL) {
       break;
@@ -91,6 +96,14 @@ void printText(const char *word, char **tokens, int nTokens) {
     word = nextWord;
   }
   printf("\n");
+  printf("\n");
+}
+
+void free_tokens(char **tokens, int nTokens) {
+  for (int i = 0; i < nTokens; i++) {
+    free(tokens[i]);
+  }
+  free(tokens);
 }
 
 int main() {
@@ -109,9 +122,9 @@ int main() {
   char **tokens = tokenize(data, &nTokens);
 
   for (int i = 0; i < 10; i++) {
-    printText("markov", tokens, nTokens);
+    printText("markov", 100, tokens, nTokens);
   }
 
-  free(tokens);
+  free_tokens(tokens, nTokens);
   free(data);
 }
