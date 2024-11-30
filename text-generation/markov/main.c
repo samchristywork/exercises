@@ -9,27 +9,35 @@
 #define WORDS_TO_GENERATE 10
 #define TEXT_LENGTH 100
 
-void handle_memory_error(void *ptr, const char *message) {
-  if (ptr == NULL) {
-    fprintf(stderr, "%s\n", message);
-    exit(EXIT_FAILURE);
+void exit_with_message(const char *message) {
+  fprintf(stderr, "%s\n", message);
+  exit(EXIT_FAILURE);
+}
+
+void *allocate_memory(size_t size) {
+  void *ptr = malloc(size);
+  if (!ptr) {
+    exit_with_message("Memory allocation failed");
   }
+  return ptr;
+}
+
+FILE *open_file(const char *filename, const char *mode) {
+  FILE *file = fopen(filename, mode);
+  if (!file) {
+    exit_with_message("File opening failed");
+  }
+  return file;
 }
 
 char *read_file(const char *filename) {
-  FILE *f = fopen(filename, "r");
-  if (f == NULL) {
-    fprintf(stderr, "Could not open file %s\n", filename);
-    exit(EXIT_FAILURE);
-  }
+  FILE *f = open_file(filename, "r");
 
   fseek(f, 0, SEEK_END);
   long size = ftell(f);
-  fseek(f, 0, SEEK_SET);
+  rewind(f);
 
-  char *data = malloc(size + 1);
-  handle_memory_error(data, "Memory allocation failed");
-
+  char *data = allocate_memory(size + 1);
   fread(data, 1, size, f);
   data[size] = '\0';
 
@@ -37,70 +45,62 @@ char *read_file(const char *filename) {
   return data;
 }
 
-char **tokenize(const char *data, int *nTokens) {
+char **expand_capacity(char **tokens, int *capacity) {
+  *capacity *= 2;
+  tokens = realloc(tokens, (*capacity) * sizeof(char *));
+  if (!tokens) {
+    exit_with_message("Memory reallocation failed");
+  }
+  return tokens;
+}
+
+char **tokenize(char *data, int *nTokens) {
   int capacity = INITIAL_CAPACITY;
-  char **tokens = malloc(capacity * sizeof(char *));
-  handle_memory_error(tokens, "Memory allocation failed");
-
-  char *dataCopy = strdup(data);
-  handle_memory_error(dataCopy, "Memory allocation failed for data copy");
-
-  char *token = strtok(dataCopy, " \n");
+  char **tokens = allocate_memory(capacity * sizeof(char *));
+  char *token = strtok(data, " \n");
   int count = 0;
 
-  while (token != NULL) {
+  while (token) {
     if (count >= capacity) {
-      capacity *= 2;
-      tokens = realloc(tokens, capacity * sizeof(char *));
-      handle_memory_error(tokens, "Memory reallocation failed");
+      tokens = expand_capacity(tokens, &capacity);
     }
 
-    tokens[count] = strdup(token);
-    handle_memory_error(tokens[count], "Memory allocation failed for token");
-
+    tokens[count] = allocate_memory(strlen(token) + 1);
+    strcpy(tokens[count], token);
     for (int i = 0; tokens[count][i]; i++) {
       tokens[count][i] = tolower(tokens[count][i]);
     }
-
     count++;
     token = strtok(NULL, " \n");
   }
-  free(dataCopy);
 
   *nTokens = count;
   return tokens;
 }
 
-char *predict(char **tokens, int nTokens, const char *word) {
-  char **nextWords = malloc(nTokens * sizeof(char *));
-  handle_memory_error(nextWords, "Memory allocation failed");
-
+char *predict_next_word(char **tokens, int nTokens, const char *word) {
+  char **nextWords = allocate_memory(nTokens * sizeof(char *));
   int nextWordsCount = 0;
 
   for (int i = 0; i < nTokens - 1; i++) {
     if (strcmp(tokens[i], word) == 0) {
-      nextWords[nextWordsCount] = tokens[i + 1];
-      nextWordsCount++;
+      nextWords[nextWordsCount++] = tokens[i + 1];
     }
   }
 
-  char *result = NULL;
-  if (nextWordsCount > 0) {
-    int randomIndex = rand() % nextWordsCount;
-    result = nextWords[randomIndex];
-  }
-
+  char *result = nextWordsCount > 0 ? nextWords[rand() % nextWordsCount] : NULL;
   free(nextWords);
   return result;
 }
 
-void print_text(const char *startWord, int length, char **tokens, int nTokens) {
+void generate_text(const char *startWord, int length, char **tokens,
+                   int nTokens) {
   const char *currentWord = startWord;
   printf("%s ", currentWord);
 
   for (int i = 0; i < length; i++) {
-    currentWord = predict(tokens, nTokens, currentWord);
-    if (currentWord == NULL) {
+    currentWord = predict_next_word(tokens, nTokens, currentWord);
+    if (!currentWord) {
       break;
     }
     printf("%s ", currentWord);
@@ -124,7 +124,7 @@ int main() {
   free(data);
 
   for (int i = 0; i < WORDS_TO_GENERATE; i++) {
-    print_text("markov", TEXT_LENGTH, tokens, nTokens);
+    generate_text("markov", TEXT_LENGTH, tokens, nTokens);
   }
 
   free_tokens(tokens, nTokens);
