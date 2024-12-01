@@ -6,7 +6,7 @@
 #include <time.h>
 
 #define INITIAL_CAPACITY 1000
-#define WORDS_TO_GENERATE 10
+#define ITERATIONS 10
 #define TEXT_LENGTH 100
 
 void exit_with_message(const char *message) {
@@ -105,7 +105,7 @@ void generate_text(const char *startWord, int length, char **tokens,
     }
     printf("%s ", currentWord);
   }
-  printf("\n\n");
+  printf("\n");
 }
 
 void free_tokens(char **tokens, int nTokens) {
@@ -115,16 +115,44 @@ void free_tokens(char **tokens, int nTokens) {
   free(tokens);
 }
 
-int main() {
+int main(int argc, char *argv[]) {
   srand((unsigned)time(NULL));
 
-  char *data = read_file("input.txt");
+  int textLength = TEXT_LENGTH;
+  int iterations = ITERATIONS;
+  char *filename = NULL;
+
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+      usage(argv[0]);
+    } else if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--length") == 0) {
+      if (i + 1 < argc) {
+        textLength = atoi(argv[++i]);
+      } else {
+        fprintf(stderr, "Error: Missing argument for -l/--length\n");
+        exit(EXIT_FAILURE);
+      }
+    } else if (strcmp(argv[i], "-i") == 0 ||
+               strcmp(argv[i], "--iterations") == 0) {
+      if (i + 1 < argc) {
+        iterations = atoi(argv[++i]);
+      } else {
+        fprintf(stderr, "Error: Missing argument for -i/--iterations\n");
+        exit(EXIT_FAILURE);
+      }
+    } else {
+      filename = argv[i];
+    }
+  }
+
+  char *data = read_file(filename);
   int nTokens = 0;
   char **tokens = tokenize(data, &nTokens);
   free(data);
 
-  for (int i = 0; i < WORDS_TO_GENERATE; i++) {
-    generate_text("markov", TEXT_LENGTH, tokens, nTokens);
+  for (int i = 0; i < iterations; i++) {
+    char *startWord = tokens[rand() % nTokens];
+    generate_text(startWord, textLength, tokens, nTokens);
   }
 
   free_tokens(tokens, nTokens);
