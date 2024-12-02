@@ -115,8 +115,25 @@ void free_tokens(char **tokens, int nTokens) {
   free(tokens);
 }
 
+void usage(char *name) {
+  fprintf(stderr, "Usage: %s [options] <filename>\n", name);
+  fprintf(stderr, "\nOptions:\n");
+  fprintf(stderr, "  -h, --help    Show this help message\n");
+  fprintf(stderr,
+          "  -l, --length <n>  Length of generated text (default: %d)\n",
+          TEXT_LENGTH);
+  fprintf(stderr,
+          "  -i, --iterations <n>   Number of iterations (default: %d)\n",
+          ITERATIONS);
+  exit(EXIT_FAILURE);
+}
+
 int main(int argc, char *argv[]) {
   srand((unsigned)time(NULL));
+
+  if (argc < 2) {
+    usage(argv[0]);
+  }
 
   int textLength = TEXT_LENGTH;
   int iterations = ITERATIONS;
