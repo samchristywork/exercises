@@ -125,11 +125,13 @@ void usage(char *name) {
   fprintf(stderr,
           "  -i, --iterations <n>   Number of iterations (default: %d)\n",
           ITERATIONS);
+  fprintf(stderr, "  -s, --seed <n>   Seed for random number generation "
+                  "(default: current time)\n");
   exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[]) {
-  srand((unsigned)time(NULL));
+  unsigned int seed = (unsigned)time(NULL);
 
   if (argc < 2) {
     usage(argv[0]);
@@ -157,10 +159,19 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Error: Missing argument for -i/--iterations\n");
         exit(EXIT_FAILURE);
       }
+    } else if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--seed") == 0) {
+      if (i + 1 < argc) {
+        seed = (unsigned int)atoi(argv[++i]);
+      } else {
+        fprintf(stderr, "Error: Missing argument for -s/--seed\n");
+        exit(EXIT_FAILURE);
+      }
     } else {
       filename = argv[i];
     }
   }
+
+  srand(seed);
 
   char *data = read_file(filename);
   int nTokens = 0;
