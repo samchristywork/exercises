@@ -116,17 +116,17 @@ void free_tokens(char **tokens, int nTokens) {
 }
 
 void usage(char *name) {
-  fprintf(stderr, "Usage: %s [options] <filename>\n", name);
-  fprintf(stderr, "\nOptions:\n");
-  fprintf(stderr, "  -h, --help    Show this help message\n");
   fprintf(stderr,
-          "  -l, --length <n>  Length of generated text (default: %d)\n",
-          TEXT_LENGTH);
-  fprintf(stderr,
-          "  -i, --iterations <n>   Number of iterations (default: %d)\n",
-          ITERATIONS);
-  fprintf(stderr, "  -s, --seed <n>   Seed for random number generation "
-                  "(default: current time)\n");
+          "Usage: %s [options] <filename>\n\n"
+          "Generate random text based on the input file using a simple Markov "
+          "chain.\n\n"
+          "Options:\n"
+          "  -h, --help           Show this help message\n"
+          "  -l, --length <n>     Length of generated text (default: %d)\n"
+          "  -i, --iterations <n> Number of iterations (default: %d)\n"
+          "  -s, --seed <n>       Seed for random number generation (default: "
+          "current time)\n",
+          name, TEXT_LENGTH, ITERATIONS);
   exit(EXIT_FAILURE);
 }
 
