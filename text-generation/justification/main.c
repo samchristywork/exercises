@@ -1,14 +1,24 @@
 #include <stdio.h>
 #include <string.h>
 
-void process_line(char *line, int width) {
+enum { JUSTIFY_LEFT, JUSTIFY_RIGHT, JUSTIFY_CENTER };
+
+void process_line(char *line, int width, int justify) {
   int len = strlen(line);
   int startOfLine = 0;
 
   for (int i = 0; i < len; i++) {
     if (i - startOfLine >= width) {
+      int spaces = 0;
       while (i > startOfLine && line[i] != ' ') {
         i--;
+        spaces++;
+      }
+
+      if (justify == JUSTIFY_RIGHT) {
+        for (int j = 0; j < width - (i - startOfLine); j++) {
+          putchar(' ');
+        }
       }
 
       fwrite(line + startOfLine, i - startOfLine, 1, stdout);
@@ -23,7 +33,14 @@ void process_line(char *line, int width) {
   }
 
   if (startOfLine < len) {
-    fwrite(line + startOfLine, len - startOfLine, 1, stdout);
+    if (justify == JUSTIFY_LEFT) {
+      fwrite(line + startOfLine, len - startOfLine, 1, stdout);
+    } else if (justify == JUSTIFY_RIGHT) {
+      for (int j = 0; j < width - (len - startOfLine - 2); j++) {
+        putchar(' ');
+      }
+      fwrite(line + startOfLine, len - startOfLine, 1, stdout);
+    }
   }
 }
 
@@ -32,7 +49,6 @@ int main() {
   char line[1024];
 
   while (fgets(line, sizeof(line), stdin)) {
-    process_line(line, width);
-    printf("\n");
+    process_line(line, width, JUSTIFY_RIGHT);
   }
 }
