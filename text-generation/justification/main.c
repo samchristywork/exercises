@@ -19,6 +19,11 @@ void process_line(char *line, int width, int justify) {
         for (int j = 0; j < width - (i - startOfLine); j++) {
           putchar(' ');
         }
+      } else if (justify == JUSTIFY_CENTER) {
+        int padding = (width - (i - startOfLine)) / 2;
+        for (int j = 0; j < padding; j++) {
+          putchar(' ');
+        }
       }
 
       fwrite(line + startOfLine, i - startOfLine, 1, stdout);
@@ -40,6 +45,12 @@ void process_line(char *line, int width, int justify) {
         putchar(' ');
       }
       fwrite(line + startOfLine, len - startOfLine, 1, stdout);
+    } else if (justify == JUSTIFY_CENTER) {
+      int padding = (width - (len - startOfLine)) / 2;
+      for (int j = 0; j < padding; j++) {
+        putchar(' ');
+      }
+      fwrite(line + startOfLine, len - startOfLine, 1, stdout);
     }
   }
 }
@@ -49,6 +60,6 @@ int main() {
   char line[1024];
 
   while (fgets(line, sizeof(line), stdin)) {
-    process_line(line, width, JUSTIFY_RIGHT);
+    process_line(line, width, JUSTIFY_CENTER);
   }
 }
