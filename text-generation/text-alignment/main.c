@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-enum { JUSTIFY_LEFT, JUSTIFY_RIGHT, JUSTIFY_CENTER };
+enum { ALIGN_LEFT, ALIGN_RIGHT, ALIGN_CENTER };
 
 void process_line(char *line, int width, int justify) {
   int len = strlen(line);
@@ -15,11 +15,11 @@ void process_line(char *line, int width, int justify) {
         spaces++;
       }
 
-      if (justify == JUSTIFY_RIGHT) {
+      if (justify == ALIGN_RIGHT) {
         for (int j = 0; j < width - (i - startOfLine); j++) {
           putchar(' ');
         }
-      } else if (justify == JUSTIFY_CENTER) {
+      } else if (justify == ALIGN_CENTER) {
         int padding = (width - (i - startOfLine)) / 2;
         for (int j = 0; j < padding; j++) {
           putchar(' ');
@@ -38,14 +38,14 @@ void process_line(char *line, int width, int justify) {
   }
 
   if (startOfLine < len) {
-    if (justify == JUSTIFY_LEFT) {
+    if (justify == ALIGN_LEFT) {
       fwrite(line + startOfLine, len - startOfLine, 1, stdout);
-    } else if (justify == JUSTIFY_RIGHT) {
+    } else if (justify == ALIGN_RIGHT) {
       for (int j = 0; j < width - (len - startOfLine - 2); j++) {
         putchar(' ');
       }
       fwrite(line + startOfLine, len - startOfLine, 1, stdout);
-    } else if (justify == JUSTIFY_CENTER) {
+    } else if (justify == ALIGN_CENTER) {
       int padding = (width - (len - startOfLine)) / 2;
       for (int j = 0; j < padding; j++) {
         putchar(' ');
@@ -60,6 +60,6 @@ int main() {
   char line[1024];
 
   while (fgets(line, sizeof(line), stdin)) {
-    process_line(line, width, JUSTIFY_CENTER);
+    process_line(line, width, ALIGN_CENTER);
   }
 }
