@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 enum { ALIGN_LEFT, ALIGN_RIGHT, ALIGN_CENTER };
@@ -41,7 +42,7 @@ void process_line(char *line, int width, int justify) {
     if (justify == ALIGN_LEFT) {
       fwrite(line + startOfLine, len - startOfLine, 1, stdout);
     } else if (justify == ALIGN_RIGHT) {
-      for (int j = 0; j < width - (len - startOfLine - 2); j++) {
+      for (int j = 0; j < width - (len - startOfLine); j++) {
         putchar(' ');
       }
       fwrite(line + startOfLine, len - startOfLine, 1, stdout);
@@ -52,14 +53,18 @@ void process_line(char *line, int width, int justify) {
       }
       fwrite(line + startOfLine, len - startOfLine, 1, stdout);
     }
+    printf("\n");
   }
 }
 
 int main() {
   int width = 80;
-  char line[1024];
+  char *line = NULL;
+  size_t length = 0;
 
-  while (fgets(line, sizeof(line), stdin)) {
+  while (getline(&line, &length, stdin) != -1) {
     process_line(line, width, ALIGN_CENTER);
   }
+
+  free(line);
 }
