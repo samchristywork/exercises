@@ -11,9 +11,19 @@ void process_line(char *line, int width, int align) {
   for (int i = 0; i < len; i++) {
     if (i - startOfLine >= width) {
       int spaces = 0;
+      int endOfLine = i;
+
       while (i > startOfLine && line[i] != ' ') {
         i--;
         spaces++;
+      }
+
+      if (i == startOfLine) {
+        i = endOfLine;
+      } else {
+        while (line[i] == ' ') {
+          i++;
+        }
       }
 
       if (align == ALIGN_RIGHT) {
