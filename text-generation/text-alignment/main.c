@@ -74,6 +74,8 @@ void usage(const char *name) {
       "  -l, --left          Align text to the left (default)\n"
       "  -r, --right         Align text to the right\n"
       "  -c, --center        Center align text\n"
+      "  -w, --width WIDTH   Set the width of the output (default: 80)\n"
+      "  -h, --help          Show this help message\n"
       "\n", name);
   exit(EXIT_FAILURE);
 }
@@ -91,6 +93,20 @@ int main(int argc, char *argv[]) {
       align = ALIGN_RIGHT;
     } else if (strcmp(argv[i], "-c") == 0 || strcmp(argv[i], "--center") == 0) {
       align = ALIGN_CENTER;
+    } else if (strcmp(argv[i], "-w") == 0 || strcmp(argv[i], "--width") == 0) {
+      if (i + 1 < argc) {
+        width = atoi(argv[++i]);
+        if (width <= 0) {
+          usage(argv[0]);
+        }
+      } else {
+        usage(argv[0]);
+      }
+    } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+      usage(argv[0]);
+    } else {
+      fprintf(stderr, "Unknown option: %s\n", argv[i]);
+      usage(argv[0]);
     }
   }
 
