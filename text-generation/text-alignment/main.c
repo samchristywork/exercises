@@ -1,10 +1,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 enum { ALIGN_LEFT, ALIGN_RIGHT, ALIGN_CENTER };
 
-void process_line(char *line, int width, int align) {
+void print_border_line(int width) {
+  putchar('+');
+  for (int i = 0; i < width; i++) {
+    putchar('-');
+  }
+  putchar('+');
+  putchar('\n');
+}
+
+void process_line(char *line, int width, int align, bool border) {
   int len = strlen(line);
   int startOfLine = 0;
 
@@ -26,6 +36,10 @@ void process_line(char *line, int width, int align) {
         }
       }
 
+      if (border) {
+        putchar('|');
+      }
+
       if (align == ALIGN_RIGHT) {
         for (int j = 0; j < width - (i - startOfLine); j++) {
           putchar(' ');
@@ -38,6 +52,23 @@ void process_line(char *line, int width, int align) {
       }
 
       fwrite(line + startOfLine, i - startOfLine, 1, stdout);
+
+      if (align == ALIGN_LEFT) {
+        for (int j = 0; j < width - (i - startOfLine); j++) {
+          putchar(' ');
+        }
+      } else if (align == ALIGN_CENTER) {
+        int padding = (width - (i - startOfLine)) / 2;
+        int extraPadding = width - (i - startOfLine) - 2 * padding;
+        for (int j = 0; j < padding + extraPadding; j++) {
+          putchar(' ');
+        }
+      }
+
+      if (border) {
+        putchar('|');
+      }
+
       printf("\n");
 
       while (line[i] == ' ') {
@@ -49,8 +80,15 @@ void process_line(char *line, int width, int align) {
   }
 
   if (startOfLine < len) {
+    if (border) {
+      putchar('|');
+    }
+
     if (align == ALIGN_LEFT) {
       fwrite(line + startOfLine, len - startOfLine, 1, stdout);
+      for (int j = 0; j < width - (len - startOfLine); j++) {
+        putchar(' ');
+      }
     } else if (align == ALIGN_RIGHT) {
       for (int j = 0; j < width - (len - startOfLine); j++) {
         putchar(' ');
@@ -62,8 +100,17 @@ void process_line(char *line, int width, int align) {
         putchar(' ');
       }
       fwrite(line + startOfLine, len - startOfLine, 1, stdout);
+      for (int j = 0; j < padding; j++) {
+        putchar(' ');
+      }
+      if ((width - (len - startOfLine)) % 2 != 0) {
+        putchar(' ');
+      }
     }
-    printf("\n");
+
+    if (border) {
+      putchar('|');
+    }
   }
 }
 
@@ -75,6 +122,7 @@ void usage(const char *name) {
       "  -r, --right         Align text to the right\n"
       "  -c, --center        Center align text\n"
       "  -w, --width WIDTH   Set the width of the output (default: 80)\n"
+      "  -b, --border        Add a border around the text\n"
       "  -h, --help          Show this help message\n"
       "\n", name);
   exit(EXIT_FAILURE);
@@ -85,6 +133,7 @@ int main(int argc, char *argv[]) {
   char *line = NULL;
   size_t length = 0;
   int align = ALIGN_LEFT;
+  bool border = false;
 
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--left") == 0) {
@@ -102,6 +151,8 @@ int main(int argc, char *argv[]) {
       } else {
         usage(argv[0]);
       }
+    } else if (strcmp(argv[i], "-b") == 0 || strcmp(argv[i], "--border") == 0) {
+      border = true;
     } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
       usage(argv[0]);
     } else {
@@ -110,9 +161,13 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  print_border_line(width);
   while (getline(&line, &length, stdin) != -1) {
-    process_line(line, width, align);
+    line[strcspn(line, "\n")] = '\0';
+    process_line(line, width, align, border);
+    printf("\n");
   }
+  print_border_line(width);
 
   free(line);
 }
