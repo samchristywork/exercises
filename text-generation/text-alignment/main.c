@@ -45,7 +45,7 @@ void process_line(char *line, int width, int align, bool border) {
       }
 
       if (align == ALIGN_RIGHT) {
-        for (int j = 0; j < width - (i - startOfLine - 2); j++) {
+        for (int j = 0; j < width - (i - startOfLine - 1); j++) {
           putchar(' ');
         }
       } else if (align == ALIGN_CENTER) {
@@ -95,7 +95,7 @@ void process_line(char *line, int width, int align, bool border) {
         putchar(' ');
       }
     } else if (align == ALIGN_RIGHT) {
-      for (int j = 0; j < width - (len - startOfLine - 2); j++) {
+      for (int j = 0; j < width - (len - startOfLine - 1); j++) {
         putchar(' ');
       }
       fwrite(line + startOfLine, len - startOfLine, 1, stdout);
