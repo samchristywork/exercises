@@ -89,6 +89,8 @@ void process_line(char *line, int width, int align, bool border) {
       putchar(' ');
     }
 
+    len--;
+    width--;
     if (align == ALIGN_LEFT) {
       fwrite(line + startOfLine, len - startOfLine, 1, stdout);
       for (int j = 0; j < width - (len - startOfLine - 2); j++) {
