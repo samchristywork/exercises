@@ -5,13 +5,25 @@
 
 enum { ALIGN_LEFT, ALIGN_RIGHT, ALIGN_CENTER };
 
-void print_border_line(int width) {
+void print_border_top(int width) {
   width += 2;
-  putchar('+');
+
+  printf("┌");
   for (int i = 0; i < width; i++) {
-    putchar('-');
+    printf("─");
   }
-  putchar('+');
+  printf("┐");
+  putchar('\n');
+}
+
+void print_border_bottom(int width) {
+  width += 2;
+
+  printf("└");
+  for (int i = 0; i < width; i++) {
+    printf("─");
+  }
+  printf("┘");
   putchar('\n');
 }
 
@@ -40,7 +52,7 @@ void process_line(char *line, int width, int align, bool border) {
       }
 
       if (border) {
-        putchar('|');
+        printf("│");
         putchar(' ');
       }
 
@@ -70,7 +82,7 @@ void process_line(char *line, int width, int align, bool border) {
       }
 
       if (border) {
-        putchar('|');
+        printf("│");
       }
 
       printf("\n");
@@ -85,7 +97,7 @@ void process_line(char *line, int width, int align, bool border) {
 
   if (startOfLine < len) {
     if (border) {
-      putchar('|');
+      printf("│");
       putchar(' ');
     }
 
@@ -117,7 +129,7 @@ void process_line(char *line, int width, int align, bool border) {
     }
 
     if (border) {
-      putchar('|');
+      printf("│");
     }
   }
 
@@ -174,7 +186,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (border) {
-    print_border_line(width);
+    print_border_top(width);
   }
 
   while (getline(&line, &length, stdin) != -1) {
@@ -182,7 +194,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (border) {
-    print_border_line(width);
+    print_border_bottom(width);
   }
 
   free(line);
