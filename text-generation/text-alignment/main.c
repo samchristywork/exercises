@@ -146,8 +146,7 @@ void usage(const char *name) {
           "  -c, --center        Center align text\n"
           "  -w, --width WIDTH   Set the width of the output (default: 80)\n"
           "  -b, --border        Add a border around the text\n"
-          "  -h, --help          Show this help message\n"
-          "\n",
+          "  -h, --help          Show this help message\n",
           name);
   exit(EXIT_FAILURE);
 }
