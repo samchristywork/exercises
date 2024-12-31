@@ -40,11 +40,30 @@ void gaussianElimination(double coefficients[3][3], double constants[3],
   }
 }
 
+void prettyPrintProblem(double coefficients[3][3], double constants[3], int n) {
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < n; j++) {
+      if (coefficients[i][j] >= 0) {
+        if (j != 0) {
+          printf("+");
+        }
+        printf("%g%c", coefficients[i][j], 'z' + j - n + 1);
+      } else {
+        printf("-%g%c", -coefficients[i][j], 'z' + j - n + 1);
+      }
+    }
+    printf("=%g\n", constants[i]);
+  }
+}
+
 int main() {
   double coefficients[3][3] = {{2, 3, -1}, {4, 1, 2}, {-3, 2, 1}};
   double constants[3] = {1, -2, 3};
-  double solution[3];
 
+  prettyPrintProblem(coefficients, constants, 3);
+  printf("\n");
+
+  double solution[3];
   gaussianElimination(coefficients, constants, solution, 3);
 
   for (int i = 0; i < 3; i++) {
