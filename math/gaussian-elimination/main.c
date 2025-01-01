@@ -56,6 +56,23 @@ void prettyPrintProblem(double coefficients[3][3], double constants[3], int n) {
   }
 }
 
+void prettyPrintSolution(double solution[3], int n) {
+  for (int i = 0; i < n; i++) {
+    printf("%c=%g\n", 'z' + i - n + 1, solution[i]);
+  }
+}
+
+void testSolution(double coefficients[3][3], double constants[3],
+                  double solution[3], int n) {
+  for (int i = 0; i < n; i++) {
+    double sum = 0;
+    for (int j = 0; j < n; j++) {
+      sum += coefficients[i][j] * solution[j];
+    }
+    printf("Equation %d: %g\n", i, sum - constants[i]);
+  }
+}
+
 int main() {
   double coefficients[3][3] = {{2, 3, -1}, {4, 1, 2}, {-3, 2, 1}};
   double constants[3] = {1, -2, 3};
@@ -66,7 +83,8 @@ int main() {
   double solution[3];
   gaussianElimination(coefficients, constants, solution, 3);
 
-  for (int i = 0; i < 3; i++) {
-    printf("[%d] = %.2f\n", i, solution[i]);
-  }
+  prettyPrintSolution(solution, 3);
+  printf("\n");
+
+  testSolution(coefficients, constants, solution, 3);
 }
