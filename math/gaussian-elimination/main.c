@@ -1,8 +1,8 @@
 #include <math.h>
 #include <stdio.h>
 
-void gaussianElimination(double coefficients[3][3], double constants[3],
-                         double solution[3], int n) {
+void gaussianElimination(double coefficients[][3], double constants[],
+                         double solution[], int n) {
   // Forward elimination
   for (int i = 0; i < n; i++) {
     // Find the maximum element for pivot
@@ -40,7 +40,7 @@ void gaussianElimination(double coefficients[3][3], double constants[3],
   }
 }
 
-void prettyPrintProblem(double coefficients[3][3], double constants[3], int n) {
+void prettyPrintProblem(double coefficients[][3], double constants[], int n) {
   for (int i = 0; i < n; i++) {
     for (int j = 0; j < n; j++) {
       if (coefficients[i][j] >= 0) {
@@ -56,35 +56,36 @@ void prettyPrintProblem(double coefficients[3][3], double constants[3], int n) {
   }
 }
 
-void prettyPrintSolution(double solution[3], int n) {
+void prettyPrintSolution(double solution[], int n) {
   for (int i = 0; i < n; i++) {
     printf("%c=%g\n", 'z' + i - n + 1, solution[i]);
   }
 }
 
-void testSolution(double coefficients[3][3], double constants[3],
-                  double solution[3], int n) {
+void testSolution(double coefficients[][3], double constants[],
+                  double solution[], int n) {
   for (int i = 0; i < n; i++) {
     double sum = 0;
     for (int j = 0; j < n; j++) {
       sum += coefficients[i][j] * solution[j];
     }
-    printf("Equation %d: %g\n", i, sum - constants[i]);
+    printf("Equation %d: %g\n", i + 1, sum - constants[i]);
   }
 }
 
 int main() {
+  int n = 3;
   double coefficients[3][3] = {{2, 3, -1}, {4, 1, 2}, {-3, 2, 1}};
   double constants[3] = {1, -2, 3};
 
-  prettyPrintProblem(coefficients, constants, 3);
+  prettyPrintProblem(coefficients, constants, n);
   printf("\n");
 
   double solution[3];
-  gaussianElimination(coefficients, constants, solution, 3);
+  gaussianElimination(coefficients, constants, solution, n);
 
-  prettyPrintSolution(solution, 3);
+  prettyPrintSolution(solution, n);
   printf("\n");
 
-  testSolution(coefficients, constants, solution, 3);
+  testSolution(coefficients, constants, solution, n);
 }
