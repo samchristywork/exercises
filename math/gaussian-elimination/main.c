@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 void gaussianElimination(double coefficients[][3], double constants[],
                          double solution[], int n) {
@@ -73,6 +74,7 @@ void testSolution(double coefficients[][3], double constants[],
   }
 }
 
+#ifdef TEST
 int main() {
   int n = 3;
   double coefficients[3][3] = {{2, 3, -1}, {4, 1, 2}, {-3, 2, 1}};
@@ -89,3 +91,30 @@ int main() {
 
   testSolution(coefficients, constants, solution, n);
 }
+#else
+int readLine(double coefficients[], double *constant) {
+  return scanf("%lf %lf %lf %lf", &coefficients[0], &coefficients[1],
+               &coefficients[2], constant) == 4;
+}
+
+int main() {
+  int n = 0;
+  double coefficients[256][3];
+  double constants[256];
+
+  while (readLine(coefficients[n], &constants[n])) {
+    n++;
+  }
+
+  prettyPrintProblem(coefficients, constants, n);
+  printf("\n");
+
+  double solution[3];
+  gaussianElimination(coefficients, constants, solution, n);
+
+  prettyPrintSolution(solution, n);
+  printf("\n");
+
+  testSolution(coefficients, constants, solution, n);
+}
+#endif
