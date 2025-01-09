@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 int perm[512];
 int p[] = {151, 160, 137, 91,  90,  15,  131, 13,  201, 95,  96,  53,  194, 233,
@@ -101,11 +102,41 @@ void drawImage(int width, int height, float scale) {
   }
 }
 
-int main() {
+void usage(char *name) {
+  printf("Usage: %s [options]\n"
+         "\n"
+         "Options:\n"
+         "  -w <width>    Width of the image\n"
+         "  -h <height>   Height of the image\n"
+         "  -s <scale>    Scale of the noise\n"
+         "  -h            Show this help message\n",
+         name);
+  exit(1);
+}
+
+int main(int argc, char *argv[]) {
+  int width = 512;
+  int height = 512;
+  float scale = 0.01;
+
+  for (int i = 1; i < argc; i++) {
+    if (argv[i][0] == '-') {
+      if (argv[i][1] == 'w' && i + 1 < argc) {
+        width = atoi(argv[++i]);
+      } else if (argv[i][1] == 'h' && i + 1 < argc) {
+        height = atoi(argv[++i]);
+      } else if (argv[i][1] == 's' && i + 1 < argc) {
+        scale = atof(argv[++i]);
+      } else {
+        usage(argv[0]);
+      }
+    }
+  }
+
   for (int i = 0; i < 256; i++) {
     perm[i] = p[i];
     perm[i + 256] = p[i];
   }
 
-  drawImage(512, 512, 0.05);
+  drawImage(width, height, scale);
 }
