@@ -1,6 +1,8 @@
+#include <libpng/png.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int perm[512];
 int p[] = {151, 160, 137, 91,  90,  15,  131, 13,  201, 95,  96,  53,  194, 233,
@@ -90,16 +92,59 @@ double noise(double x, double y) {
   return 70.0 * (n0 + n1 + n2);
 }
 
-void drawImage(int width, int height, float scale) {
-  printf("P3\n%d %d\n255\n", width, height);
+void writePPMImage(FILE *f, int width, int height, float scale) {
+  fprintf(f, "P3\n%d %d\n255\n", width, height);
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       double value = noise(x * scale, y * scale);
       int s = (int)(value * 128 + 128);
-      printf("%d %d %d ", s, s, s);
+      fprintf(f, "%d %d %d ", s, s, s);
     }
-    printf("\n");
   }
+}
+
+void writePNGImage(FILE *f, int width, int height, float scale) {
+  png_structp png_ptr =
+      png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  if (!png_ptr) {
+    fprintf(stderr, "Error: png_create_write_struct\n");
+    exit(1);
+  }
+
+  png_infop info_ptr = png_create_info_struct(png_ptr);
+  if (!info_ptr) {
+    png_destroy_write_struct(&png_ptr, NULL);
+    fprintf(stderr, "Error: png_create_info_struct\n");
+    exit(1);
+  }
+
+  if (setjmp(png_jmpbuf(png_ptr))) {
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+    fprintf(stderr, "Error: setjmp\n");
+    exit(1);
+  }
+
+  png_init_io(png_ptr, f);
+  png_set_IHDR(png_ptr, info_ptr, width, height, 8, PNG_COLOR_TYPE_RGB,
+               PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
+               PNG_FILTER_TYPE_DEFAULT);
+  png_write_info(png_ptr, info_ptr);
+
+  png_bytep row = (png_bytep)malloc(3 * width);
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      double value = noise(x * scale, y * scale);
+      int s = (int)(value * 128 + 128);
+      row[3 * x + 0] = s;
+      row[3 * x + 1] = s;
+      row[3 * x + 2] = s;
+    }
+    png_write_row(png_ptr, row);
+  }
+
+  png_write_end(png_ptr, NULL);
+  png_destroy_write_struct(&png_ptr, &info_ptr);
+  free(row);
 }
 
 void usage(char *name) {
