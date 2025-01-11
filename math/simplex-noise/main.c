@@ -151,10 +151,16 @@ void usage(char *name) {
   printf("Usage: %s [options]\n"
          "\n"
          "Options:\n"
-         "  -w <width>    Width of the image\n"
-         "  -h <height>   Height of the image\n"
-         "  -s <scale>    Scale of the noise\n"
-         "  -h            Show this help message\n",
+         "  -w <width>    Width of the image (default: 512)\n"
+         "  -h <height>   Height of the image (default: 512)\n"
+         "  -s <scale>    Scale of the noise (default: 0.01)\n"
+         "  -t <type>     File type (default PPM)\n"
+         "  -f <file>     Output file (default stdout)\n"
+         "  -h            Show this help message\n"
+         "\n"
+         "Supported file types:\n"
+         "  PPM           Portable Pixel Map\n"
+         "  PNG           Portable Network Graphics\n",
          name);
   exit(1);
 }
@@ -163,6 +169,7 @@ int main(int argc, char *argv[]) {
   int width = 512;
   int height = 512;
   float scale = 0.01;
+  enum { PPM, PNG } type = PPM;
 
   for (int i = 1; i < argc; i++) {
     if (argv[i][0] == '-') {
@@ -172,6 +179,16 @@ int main(int argc, char *argv[]) {
         height = atoi(argv[++i]);
       } else if (argv[i][1] == 's' && i + 1 < argc) {
         scale = atof(argv[++i]);
+      } else if (argv[i][1] == 't' && i + 1 < argc) {
+        if (strcmp(argv[++i], "PPM") == 0) {
+          type = PPM;
+        } else if (strcmp(argv[i], "PNG") == 0) {
+          type = PNG;
+        } else {
+          usage(argv[0]);
+        }
+      } else if (argv[i][1] == 'h') {
+        usage(argv[0]);
       } else {
         usage(argv[0]);
       }
@@ -183,5 +200,14 @@ int main(int argc, char *argv[]) {
     perm[i + 256] = p[i];
   }
 
-  drawImage(width, height, scale);
+  switch (type) {
+  case PPM:
+    writePPMImage(stdout, width, height, scale);
+    break;
+  case PNG:
+    writePNGImage(stdout, width, height, scale);
+    break;
+  default:
+    usage(argv[0]);
+  }
 }
