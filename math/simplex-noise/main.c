@@ -108,20 +108,20 @@ void writePNGImage(FILE *f, int width, int height, float scale) {
       png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (!png_ptr) {
     fprintf(stderr, "Error: png_create_write_struct\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   png_infop info_ptr = png_create_info_struct(png_ptr);
   if (!info_ptr) {
     png_destroy_write_struct(&png_ptr, NULL);
     fprintf(stderr, "Error: png_create_info_struct\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   if (setjmp(png_jmpbuf(png_ptr))) {
     png_destroy_write_struct(&png_ptr, &info_ptr);
     fprintf(stderr, "Error: setjmp\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   png_init_io(png_ptr, f);
@@ -162,13 +162,14 @@ void usage(char *name) {
          "  PPM           Portable Pixel Map\n"
          "  PNG           Portable Network Graphics\n",
          name);
-  exit(1);
+  exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[]) {
   int width = 512;
   int height = 512;
   float scale = 0.01;
+  FILE *f = stdout;
   enum { PPM, PNG } type = PPM;
 
   for (int i = 1; i < argc; i++) {
@@ -187,6 +188,12 @@ int main(int argc, char *argv[]) {
         } else {
           usage(argv[0]);
         }
+      } else if (argv[i][1] == 'f' && i + 1 < argc) {
+        f = fopen(argv[++i], "wb");
+        if (!f) {
+          fprintf(stderr, "Error: fopen\n");
+          exit(EXIT_FAILURE);
+        }
       } else if (argv[i][1] == 'h') {
         usage(argv[0]);
       } else {
@@ -202,10 +209,10 @@ int main(int argc, char *argv[]) {
 
   switch (type) {
   case PPM:
-    writePPMImage(stdout, width, height, scale);
+    writePPMImage(f, width, height, scale);
     break;
   case PNG:
-    writePNGImage(stdout, width, height, scale);
+    writePNGImage(f, width, height, scale);
     break;
   default:
     usage(argv[0]);
