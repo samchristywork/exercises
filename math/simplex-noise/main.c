@@ -92,18 +92,20 @@ double noise(double x, double y) {
   return 70.0 * (n0 + n1 + n2);
 }
 
-void writePPMImage(FILE *f, int width, int height, float scale) {
+void writePPMImage(FILE *f, int width, int height, float scale,
+                   double (*func)(double, double)) {
   fprintf(f, "P3\n%d %d\n255\n", width, height);
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
-      double value = noise(x * scale, y * scale);
+      double value = func(x * scale, y * scale);
       int s = (int)(value * 128 + 128);
       fprintf(f, "%d %d %d ", s, s, s);
     }
   }
 }
 
-void writePNGImage(FILE *f, int width, int height, float scale) {
+void writePNGImage(FILE *f, int width, int height, float scale,
+                   double (*func)(double, double)) {
   png_structp png_ptr =
       png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (!png_ptr) {
@@ -133,7 +135,7 @@ void writePNGImage(FILE *f, int width, int height, float scale) {
   png_bytep row = (png_bytep)malloc(3 * width);
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
-      double value = noise(x * scale, y * scale);
+      double value = func(x * scale, y * scale);
       int s = (int)(value * 128 + 128);
       row[3 * x + 0] = s;
       row[3 * x + 1] = s;
@@ -147,6 +149,10 @@ void writePNGImage(FILE *f, int width, int height, float scale) {
   free(row);
 }
 
+double linear(double x, double y) { return noise(x, y); }
+
+double step(double x, double y) { return noise(x, y) > 0 ? 1 : 0; }
+
 void usage(char *name) {
   printf("Usage: %s [options]\n"
          "\n"
@@ -156,11 +162,16 @@ void usage(char *name) {
          "  -s <scale>    Scale of the noise (default: 0.01)\n"
          "  -t <type>     File type (default PPM)\n"
          "  -f <file>     Output file (default stdout)\n"
+         "  -r <style>    Style of the noise (default linear)\n"
          "  -h            Show this help message\n"
          "\n"
          "Supported file types:\n"
          "  PPM           Portable Pixel Map\n"
-         "  PNG           Portable Network Graphics\n",
+         "  PNG           Portable Network Graphics\n"
+         "\n"
+         "Supported styles:\n"
+         "  linear        Linear interpolation\n"
+         "  step          Step interpolation\n",
          name);
   exit(EXIT_FAILURE);
 }
@@ -170,6 +181,7 @@ int main(int argc, char *argv[]) {
   int height = 512;
   float scale = 0.01;
   FILE *f = stdout;
+  double (*func)(double, double) = linear;
   enum { PPM, PNG } type = PPM;
 
   for (int i = 1; i < argc; i++) {
@@ -194,6 +206,14 @@ int main(int argc, char *argv[]) {
           fprintf(stderr, "Error: fopen\n");
           exit(EXIT_FAILURE);
         }
+      } else if (argv[i][1] == 'r' && i + 1 < argc) {
+        if (strcmp(argv[++i], "linear") == 0) {
+          func = linear;
+        } else if (strcmp(argv[i], "step") == 0) {
+          func = step;
+        } else {
+          usage(argv[0]);
+        }
       } else if (argv[i][1] == 'h') {
         usage(argv[0]);
       } else {
@@ -209,10 +229,10 @@ int main(int argc, char *argv[]) {
 
   switch (type) {
   case PPM:
-    writePPMImage(f, width, height, scale);
+    writePPMImage(f, width, height, scale, func);
     break;
   case PNG:
-    writePNGImage(f, width, height, scale);
+    writePNGImage(f, width, height, scale, func);
     break;
   default:
     usage(argv[0]);
