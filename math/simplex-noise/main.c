@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define max(a, b) ((a) > (b) ? (a) : (b))
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
 int perm[512];
 int p[] = {151, 160, 137, 91,  90,  15,  131, 13,  201, 95,  96,  53,  194, 233,
            7,   225, 140, 36,  103, 30,  69,  142, 8,   99,  37,  240, 21,  10,
@@ -99,7 +102,7 @@ double noise(double x, double y) {
 
 void writePPMImage(FILE *f, int width, int height, float scale,
                    Color (*func)(double, double, int), bool channel,
-                   int quantization) {
+                   int quantization, int upper, int lower) {
   fprintf(f, "P3\n%d %d\n255\n", width, height);
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
@@ -107,10 +110,16 @@ void writePPMImage(FILE *f, int width, int height, float scale,
         Color c1 = func((x + 0) * scale, (y + 0) * scale, quantization);
         Color c2 = func((x + 1e10) * scale, (y + 0) * scale, quantization);
         Color c3 = func((x + 0) * scale, (y + 1e10) * scale, quantization);
-        fprintf(f, "%d %d %d ", c1.r, c2.g, c3.b);
+        int r = max(min(c1.r, upper), lower);
+        int g = max(min(c2.g, upper), lower);
+        int b = max(min(c3.b, upper), lower);
+        fprintf(f, "%d %d %d ", r, g, b);
       } else {
         Color c = func(x * scale, y * scale, quantization);
-        fprintf(f, "%d %d %d ", c.r, c.g, c.b);
+        int r = max(min(c.r, upper), lower);
+        int g = max(min(c.g, upper), lower);
+        int b = max(min(c.b, upper), lower);
+        fprintf(f, "%d %d %d ", r, g, b);
       }
     }
   }
@@ -118,7 +127,7 @@ void writePPMImage(FILE *f, int width, int height, float scale,
 
 void writePNGImage(FILE *f, int width, int height, float scale,
                    Color (*func)(double, double, int), bool channel,
-                   int quantization) {
+                   int quantization, int upper, int lower) {
   png_structp png_ptr =
       png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (!png_ptr) {
@@ -152,14 +161,20 @@ void writePNGImage(FILE *f, int width, int height, float scale,
         Color c1 = func((x + 0) * scale, (y + 0) * scale, quantization);
         Color c2 = func((x + 1e10) * scale, (y + 0) * scale, quantization);
         Color c3 = func((x + 0) * scale, (y + 1e10) * scale, quantization);
-        row[3 * x + 0] = c1.r;
-        row[3 * x + 1] = c2.g;
-        row[3 * x + 2] = c3.b;
+        int r = max(min(c1.r, upper), lower);
+        int g = max(min(c2.g, upper), lower);
+        int b = max(min(c3.b, upper), lower);
+        row[3 * x + 0] = r;
+        row[3 * x + 1] = g;
+        row[3 * x + 2] = b;
       } else {
         Color c = func(x * scale, y * scale, quantization);
-        row[3 * x + 0] = c.r;
-        row[3 * x + 1] = c.g;
-        row[3 * x + 2] = c.b;
+        int r = max(min(c.r, upper), lower);
+        int g = max(min(c.g, upper), lower);
+        int b = max(min(c.b, upper), lower);
+        row[3 * x + 0] = r;
+        row[3 * x + 1] = g;
+        row[3 * x + 2] = b;
       }
     }
     png_write_row(png_ptr, row);
@@ -192,6 +207,8 @@ void usage(char *name) {
          "  -t <type>     File type (default PPM)\n"
          "  -f <file>     Output file (default stdout)\n"
          "  -r <style>    Style of the noise (default linear)\n"
+         "  -u <n>        Upper bound of the noise (default 256)\n"
+         "  -l <n>        Lower bound of the noise (default 0)\n"
          "  -c            Use a different seed for each channel\n"
          "  -q <n>        Color quantization modifier (default 256)\n"
          "  -h            Show this help message\n"
@@ -214,6 +231,8 @@ int main(int argc, char *argv[]) {
   FILE *f = stdout;
   bool channel = false;
   int quantization = 256;
+  int upper = 256;
+  int lower = 0;
   Color (*func)(double, double, int) = linear;
   enum { PPM, PNG } type = PPM;
 
@@ -247,6 +266,18 @@ int main(int argc, char *argv[]) {
         } else {
           usage(argv[0]);
         }
+      } else if (argv[i][1] == 'u' && i + 1 < argc) {
+        upper = atoi(argv[++i]);
+        if (upper <= 0 || upper > 255) {
+          fprintf(stderr, "Error: upper bound must be between 1 and 255\n");
+          exit(EXIT_FAILURE);
+        }
+      } else if (argv[i][1] == 'l' && i + 1 < argc) {
+        lower = atoi(argv[++i]);
+        if (lower < 0 || lower >= 255) {
+          fprintf(stderr, "Error: lower bound must be between 0 and 254\n");
+          exit(EXIT_FAILURE);
+        }
       } else if (argv[i][1] == 'c') {
         channel = true;
       } else if (argv[i][1] == 'q' && i + 1 < argc) {
@@ -270,10 +301,12 @@ int main(int argc, char *argv[]) {
 
   switch (type) {
   case PPM:
-    writePPMImage(f, width, height, scale, func, channel, quantization);
+    writePPMImage(f, width, height, scale, func, channel, quantization, upper,
+                  lower);
     break;
   case PNG:
-    writePNGImage(f, width, height, scale, func, channel, quantization);
+    writePNGImage(f, width, height, scale, func, channel, quantization, upper,
+                  lower);
     break;
   default:
     usage(argv[0]);
