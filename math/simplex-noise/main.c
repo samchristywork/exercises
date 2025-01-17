@@ -101,21 +101,25 @@ double noise(double x, double y) {
 }
 
 void writePPMImage(FILE *f, int width, int height, float scale,
-                   Color (*func)(double, double, int), bool channel,
-                   int quantization, int upper, int lower) {
+                   Color (*func)(double, double, int, bool), bool channel,
+                   int quantization, int upper, int lower, bool mirror,
+                   ) {
   fprintf(f, "P3\n%d %d\n255\n", width, height);
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       if (channel) {
-        Color c1 = func((x + 0) * scale, (y + 0) * scale, quantization);
-        Color c2 = func((x + 1e10) * scale, (y + 0) * scale, quantization);
-        Color c3 = func((x + 0) * scale, (y + 1e10) * scale, quantization);
+        Color c1 = func((x + 0) * scale, (y + 0) * scale, quantization, mirror);
+        Color c2 =
+            func((x + 1e10) * scale, (y + 0) * scale, quantization, mirror);
+        Color c3 =
+            func((x + 0) * scale, (y + 1e10) * scale, quantization, mirror);
+
         int r = max(min(c1.r, upper), lower);
         int g = max(min(c2.g, upper), lower);
         int b = max(min(c3.b, upper), lower);
         fprintf(f, "%d %d %d ", r, g, b);
       } else {
-        Color c = func(x * scale, y * scale, quantization);
+        Color c = func(x * scale, y * scale, quantization, mirror);
         int r = max(min(c.r, upper), lower);
         int g = max(min(c.g, upper), lower);
         int b = max(min(c.b, upper), lower);
@@ -126,8 +130,9 @@ void writePPMImage(FILE *f, int width, int height, float scale,
 }
 
 void writePNGImage(FILE *f, int width, int height, float scale,
-                   Color (*func)(double, double, int), bool channel,
-                   int quantization, int upper, int lower) {
+                   Color (*func)(double, double, int, bool), bool channel,
+                   int quantization, int upper, int lower, bool mirror,
+                   ) {
   png_structp png_ptr =
       png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (!png_ptr) {
@@ -158,9 +163,11 @@ void writePNGImage(FILE *f, int width, int height, float scale,
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       if (channel) {
-        Color c1 = func((x + 0) * scale, (y + 0) * scale, quantization);
-        Color c2 = func((x + 1e10) * scale, (y + 0) * scale, quantization);
-        Color c3 = func((x + 0) * scale, (y + 1e10) * scale, quantization);
+        Color c1 = func((x + 0) * scale, (y + 0) * scale, quantization, mirror);
+        Color c2 =
+            func((x + 1e10) * scale, (y + 0) * scale, quantization, mirror);
+        Color c3 =
+            func((x + 0) * scale, (y + 1e10) * scale, quantization, mirror);
         int r = max(min(c1.r, upper), lower);
         int g = max(min(c2.g, upper), lower);
         int b = max(min(c3.b, upper), lower);
@@ -168,7 +175,7 @@ void writePNGImage(FILE *f, int width, int height, float scale,
         row[3 * x + 1] = g;
         row[3 * x + 2] = b;
       } else {
-        Color c = func(x * scale, y * scale, quantization);
+        Color c = func(x * scale, y * scale, quantization, mirror);
         int r = max(min(c.r, upper), lower);
         int g = max(min(c.g, upper), lower);
         int b = max(min(c.b, upper), lower);
@@ -185,14 +192,17 @@ void writePNGImage(FILE *f, int width, int height, float scale,
   free(row);
 }
 
-Color linear(double x, double y, int quantization) {
+Color linear(double x, double y, int quantization, bool mirror) {
   double f = noise(x, y) * 0.5 + 0.5;
+  if (mirror) {
+    f = f < 0.5 ? 0.5 - f : f - 0.5;
+  }
   int n = f * quantization;
   n = n * 255 / quantization;
   return (Color){n, n, n};
 }
 
-Color step(double x, double y, int quantization) {
+Color step(double x, double y, int quantization, bool mirror) {
   double n = noise(x, y);
   return (Color){n > 0 ? 255 : 0, n > 0 ? 255 : 0, n > 0 ? 255 : 0};
 }
@@ -210,12 +220,13 @@ void usage(char *name) {
          "  -u <n>        Upper bound of the noise (default 256)\n"
          "  -l <n>        Lower bound of the noise (default 0)\n"
          "  -c            Use a different seed for each channel\n"
+         "  -m            Mirror the noise in the value domain\n"
          "  -q <n>        Color quantization modifier (default 256)\n"
          "  -h            Show this help message\n"
          "\n"
          "Supported file types:\n"
-         "  PPM           Portable Pixel Map\n"
-         "  PNG           Portable Network Graphics\n"
+         "  ppm           Portable Pixel Map\n"
+         "  png           Portable Network Graphics\n"
          "\n"
          "Supported styles:\n"
          "  linear        Linear interpolation\n"
@@ -233,7 +244,8 @@ int main(int argc, char *argv[]) {
   int quantization = 256;
   int upper = 256;
   int lower = 0;
-  Color (*func)(double, double, int) = linear;
+  bool mirror = false;
+  Color (*func)(double, double, int, bool) = linear;
   enum { PPM, PNG } type = PPM;
 
   for (int i = 1; i < argc; i++) {
@@ -245,9 +257,9 @@ int main(int argc, char *argv[]) {
       } else if (argv[i][1] == 's' && i + 1 < argc) {
         scale = atof(argv[++i]);
       } else if (argv[i][1] == 't' && i + 1 < argc) {
-        if (strcmp(argv[++i], "PPM") == 0) {
+        if (strcmp(argv[++i], "ppm") == 0) {
           type = PPM;
-        } else if (strcmp(argv[i], "PNG") == 0) {
+        } else if (strcmp(argv[i], "png") == 0) {
           type = PNG;
         } else {
           usage(argv[0]);
@@ -280,6 +292,8 @@ int main(int argc, char *argv[]) {
         }
       } else if (argv[i][1] == 'c') {
         channel = true;
+      } else if (argv[i][1] == 'm') {
+        mirror = true;
       } else if (argv[i][1] == 'q' && i + 1 < argc) {
         quantization = atoi(argv[++i]);
         if (quantization <= 0) {
@@ -302,11 +316,11 @@ int main(int argc, char *argv[]) {
   switch (type) {
   case PPM:
     writePPMImage(f, width, height, scale, func, channel, quantization, upper,
-                  lower);
+                  lower, mirror);
     break;
   case PNG:
     writePNGImage(f, width, height, scale, func, channel, quantization, upper,
-                  lower);
+                  lower, mirror);
     break;
   default:
     usage(argv[0]);
