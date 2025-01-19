@@ -127,6 +127,7 @@ void writePPMImage(FILE *f, int width, int height, float scale,
         fprintf(f, "%d %d %d ", r, g, b);
       } else {
         Color c = func(x * scale, y * scale, quantization, mirror);
+
         int r = max(min(c.r, upper), lower);
         int g = max(min(c.g, upper), lower);
         int b = max(min(c.b, upper), lower);
@@ -182,6 +183,7 @@ void writePNGImage(FILE *f, int width, int height, float scale,
             func((x + 1e10) * scale, (y + 0) * scale, quantization, mirror);
         Color c3 =
             func((x + 0) * scale, (y + 1e10) * scale, quantization, mirror);
+
         int r = max(min(c1.r, upper), lower);
         int g = max(min(c2.g, upper), lower);
         int b = max(min(c3.b, upper), lower);
@@ -197,6 +199,7 @@ void writePNGImage(FILE *f, int width, int height, float scale,
         row[3 * x + 2] = b;
       } else {
         Color c = func(x * scale, y * scale, quantization, mirror);
+
         int r = max(min(c.r, upper), lower);
         int g = max(min(c.g, upper), lower);
         int b = max(min(c.b, upper), lower);
@@ -230,6 +233,29 @@ Color linear(double x, double y, int quantization, bool mirror) {
   return (Color){n, n, n};
 }
 
+Color fbm(double x, double y, int quantization, bool mirror) {
+  double n = 0;
+  double amplitude = 1;
+  double frequency = 1;
+
+  for (int i = 0; i < 8; i++) {
+    n += noise(x * frequency, y * frequency) * amplitude;
+    amplitude *= 0.5;
+    frequency *= 2;
+  }
+
+  n = n * 0.5 + 0.5;
+  if (mirror) {
+    n = n < 0.5 ? 0.5 - n : n - 0.5;
+  }
+
+  int m = n * quantization;
+  m = m * 255 / quantization;
+  m = max(min(m, 255), 0);
+
+  return (Color){m, m, m};
+}
+
 Color step(double x, double y, int quantization, bool mirror) {
   double n = noise(x, y);
   return (Color){n > 0 ? 255 : 0, n > 0 ? 255 : 0, n > 0 ? 255 : 0};
@@ -259,6 +285,7 @@ void usage(char *name) {
          "\n"
          "Supported styles:\n"
          "  linear        Linear interpolation\n"
+         "  fbm           Fractional Brownian motion\n"
          "  step          Step interpolation\n",
          name);
   exit(EXIT_FAILURE);
@@ -303,6 +330,8 @@ int main(int argc, char *argv[]) {
       } else if (argv[i][1] == 'r' && i + 1 < argc) {
         if (strcmp(argv[++i], "linear") == 0) {
           func = linear;
+        } else if (strcmp(argv[i], "fbm") == 0) {
+          func = fbm;
         } else if (strcmp(argv[i], "step") == 0) {
           func = step;
         } else {
