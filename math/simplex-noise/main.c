@@ -5,8 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
+// Input value is assumed to be between 0 and 1
+#define map(x, range) ((x) * ((range.max) - (range.min)) + (range.min))
 
 int perm[512];
 int p[] = {151, 160, 137, 91,  90,  15,  131, 13,  201, 95,  96,  53,  194, 233,
@@ -37,10 +40,12 @@ typedef struct {
   unsigned char r, g, b;
 } Color;
 
-double dot(double g[], double x, double y) { return g[0] * x + g[1] * y; }
+typedef struct {
+  double min;
+  double max;
+} Range;
 
-// Input value is assumed to be between 0 and 1
-double map(double x, double min, double max) { return x * (max - min) + min; }
+double dot(double g[], double x, double y) { return g[0] * x + g[1] * y; }
 
 double noise(double x, double y) {
   const double F2 = 0.5 * (sqrt(3.0) - 1.0);
@@ -104,19 +109,16 @@ double noise(double x, double y) {
 }
 
 void writePPMImage(FILE *f, int width, int height, float scale,
-                   Color (*func)(double, double, int, bool, double, double),
-                   bool channel, int quant, double lower, double upper,
-                   bool mirror, bool invert) {
+                   Color (*func)(double, double, int, bool, Range),
+                   bool channel, int quant, Range range, bool mirror,
+                   bool invert) {
   fprintf(f, "P3\n%d %d\n255\n", width, height);
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       if (channel) {
-        Color c1 =
-            func((x + 0) * scale, (y + 0) * scale, quant, mirror, lower, upper);
-        Color c2 = func((x + 1e10) * scale, (y + 0) * scale, quant, mirror,
-                        lower, upper);
-        Color c3 = func((x + 0) * scale, (y + 1e10) * scale, quant, mirror,
-                        lower, upper);
+        Color c1 = func(x * scale, y * scale, quant, mirror, range);
+        Color c2 = func((x + 1e10) * scale, y * scale, quant, mirror, range);
+        Color c3 = func(0 * scale, (y + 1e10) * scale, quant, mirror, range);
 
         int r = c1.r;
         int g = c2.g;
@@ -130,7 +132,7 @@ void writePPMImage(FILE *f, int width, int height, float scale,
 
         fprintf(f, "%d %d %d ", r, g, b);
       } else {
-        Color c = func(x * scale, y * scale, quant, mirror, lower, upper);
+        Color c = func(x * scale, y * scale, quant, mirror, range);
 
         int r = c.r;
         int g = c.g;
@@ -149,9 +151,9 @@ void writePPMImage(FILE *f, int width, int height, float scale,
 }
 
 void writePNGImage(FILE *f, int width, int height, float scale,
-                   Color (*func)(double, double, int, bool, double, double),
-                   bool channel, int quant, double lower, double upper,
-                   bool mirror, bool invert) {
+                   Color (*func)(double, double, int, bool, Range),
+                   bool channel, int quant, Range range, bool mirror,
+                   bool invert) {
   png_structp png_ptr =
       png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (!png_ptr) {
@@ -182,12 +184,9 @@ void writePNGImage(FILE *f, int width, int height, float scale,
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
       if (channel) {
-        Color c1 =
-            func((x + 0) * scale, (y + 0) * scale, quant, mirror, lower, upper);
-        Color c2 = func((x + 1e10) * scale, (y + 0) * scale, quant, mirror,
-                        lower, upper);
-        Color c3 = func((x + 0) * scale, (y + 1e10) * scale, quant, mirror,
-                        lower, upper);
+        Color c1 = func(x * scale, y * scale, quant, mirror, range);
+        Color c2 = func((x + 1e10) * scale, y * scale, quant, mirror, range);
+        Color c3 = func(x * scale, (y + 1e10) * scale, quant, mirror, range);
 
         int r = c1.r;
         int g = c2.g;
@@ -203,7 +202,7 @@ void writePNGImage(FILE *f, int width, int height, float scale,
         row[3 * x + 1] = g;
         row[3 * x + 2] = b;
       } else {
-        Color c = func(x * scale, y * scale, quant, mirror, lower, upper);
+        Color c = func(x * scale, y * scale, quant, mirror, range);
 
         int r = c.r;
         int g = c.g;
@@ -228,20 +227,18 @@ void writePNGImage(FILE *f, int width, int height, float scale,
   free(row);
 }
 
-Color linear(double x, double y, int quantization, bool mirror, double lower,
-             double upper) {
+Color linear(double x, double y, int quantization, bool mirror, Range range) {
   double f = noise(x, y) * 0.5 + 0.5;
   if (mirror) {
     f = f < 0.5 ? 0.5 - f : f - 0.5;
   }
-  f = map(f, lower, upper);
+  f = map(f, range);
   int n = f * quantization;
   n = n * 255 / quantization;
   return (Color){n, n, n};
 }
 
-Color fbm(double x, double y, int quantization, bool mirror, double lower,
-          double upper) {
+Color fbm(double x, double y, int quantization, bool mirror, Range range) {
   double n = 0;
   double amplitude = 1;
   double frequency = 1;
@@ -256,19 +253,18 @@ Color fbm(double x, double y, int quantization, bool mirror, double lower,
   if (mirror) {
     n = n < 0.5 ? 0.5 - n : n - 0.5;
   }
-  n = map(n, lower, upper);
+  n = map(n, range);
 
   int m = n * quantization;
   m = m * 255 / quantization;
-  m = max(min(m, 255), 0);
+  m = MAX(MIN(m, 255), 0);
 
   return (Color){m, m, m};
 }
 
-Color step(double x, double y, int quantization, bool mirror, double lower,
-           double upper) {
+Color step(double x, double y, int quantization, bool mirror, Range range) {
   double n = noise(x, y);
-  n = map(n, lower, upper);
+  n = map(n, range);
   return (Color){n > 0 ? 255 : 0, n > 0 ? 255 : 0, n > 0 ? 255 : 0};
 }
 
@@ -309,11 +305,10 @@ int main(int argc, char *argv[]) {
   FILE *f = stdout;
   bool channel = false;
   int quantization = 256;
-  double lower = 0;
-  double upper = 1;
+  Range range = {0, 1};
   bool mirror = false;
   bool invert = false;
-  Color (*func)(double, double, int, bool, double, double) = linear;
+  Color (*func)(double, double, int, bool, Range) = linear;
   enum { PPM, PNG } type = PPM;
 
   for (int i = 1; i < argc; i++) {
@@ -349,9 +344,9 @@ int main(int argc, char *argv[]) {
           usage(argv[0]);
         }
       } else if (argv[i][1] == 'u' && i + 1 < argc) {
-        upper = atof(argv[++i]);
+        range.max = atof(argv[++i]);
       } else if (argv[i][1] == 'l' && i + 1 < argc) {
-        lower = atof(argv[++i]);
+        range.min = atof(argv[++i]);
       } else if (argv[i][1] == 'c') {
         channel = true;
       } else if (argv[i][1] == 'm') {
@@ -379,12 +374,12 @@ int main(int argc, char *argv[]) {
 
   switch (type) {
   case PPM:
-    writePPMImage(f, width, height, scale, func, channel, quantization, lower,
-                  upper, mirror, invert);
+    writePPMImage(f, width, height, scale, func, channel, quantization, range,
+                  mirror, invert);
     break;
   case PNG:
-    writePNGImage(f, width, height, scale, func, channel, quantization, lower,
-                  upper, mirror, invert);
+    writePNGImage(f, width, height, scale, func, channel, quantization, range,
+                  mirror, invert);
     break;
   default:
     usage(argv[0]);
