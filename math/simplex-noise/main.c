@@ -50,9 +50,17 @@ typedef struct {
   int height;
 } Dimension;
 
-double dot(double g[], double x, double y) { return g[0] * x + g[1] * y; }
+typedef struct {
+  double x;
+  double y;
+} Vec2;
 
-double noise(double x, double y) {
+double dot(double g[], Vec2 xy) { return g[0] * xy.x + g[1] * xy.y; }
+
+double noise(Vec2 pos) {
+  double x = pos.x;
+  double y = pos.y;
+
   const double F2 = 0.5 * (sqrt(3.0) - 1.0);
   const double G2 = (3.0 - sqrt(3.0)) / 6.0;
 
@@ -91,7 +99,7 @@ double noise(double x, double y) {
     n0 = 0.0;
   } else {
     t0 *= t0;
-    n0 = t0 * t0 * dot(grad3[gi0], x0, y0);
+    n0 = t0 * t0 * dot(grad3[gi0], (Vec2){x0, y0});
   }
 
   double t1 = 0.5 - x1 * x1 - y1 * y1;
@@ -99,7 +107,7 @@ double noise(double x, double y) {
     n1 = 0.0;
   } else {
     t1 *= t1;
-    n1 = t1 * t1 * dot(grad3[gi1], x1, y1);
+    n1 = t1 * t1 * dot(grad3[gi1], (Vec2){x1, y1});
   }
 
   double t2 = 0.5 - x2 * x2 - y2 * y2;
@@ -107,23 +115,24 @@ double noise(double x, double y) {
     n2 = 0.0;
   } else {
     t2 *= t2;
-    n2 = t2 * t2 * dot(grad3[gi2], x2, y2);
+    n2 = t2 * t2 * dot(grad3[gi2], (Vec2){x2, y2});
   }
 
   return 70.0 * (n0 + n1 + n2);
 }
 
 void writePPMImage(FILE *f, Dimension d, float scale,
-                   Color (*func)(double, double, int, bool, Range),
-                   bool channel, int quant, Range range, bool mirror,
-                   bool invert) {
+                   Color (*func)(Vec2, int, bool, Range), bool channel,
+                   int quant, Range range, bool mirror, bool invert) {
   fprintf(f, "P3\n%d %d\n255\n", d.width, d.height);
   for (int y = 0; y < d.height; y++) {
     for (int x = 0; x < d.width; x++) {
       if (channel) {
-        Color c1 = func(x * scale, y * scale, quant, mirror, range);
-        Color c2 = func((x + 1e10) * scale, y * scale, quant, mirror, range);
-        Color c3 = func(0 * scale, (y + 1e10) * scale, quant, mirror, range);
+        Color c1 = func((Vec2){x * scale, y * scale}, quant, mirror, range);
+        Color c2 =
+            func((Vec2){(x + 1e10) * scale, y * scale}, quant, mirror, range);
+        Color c3 =
+            func((Vec2){0 * scale, (y + 1e10) * scale}, quant, mirror, range);
 
         int r = c1.r;
         int g = c2.g;
@@ -137,7 +146,7 @@ void writePPMImage(FILE *f, Dimension d, float scale,
 
         fprintf(f, "%d %d %d ", r, g, b);
       } else {
-        Color c = func(x * scale, y * scale, quant, mirror, range);
+        Color c = func((Vec2){x * scale, y * scale}, quant, mirror, range);
 
         int r = c.r;
         int g = c.g;
@@ -156,9 +165,8 @@ void writePPMImage(FILE *f, Dimension d, float scale,
 }
 
 void writePNGImage(FILE *f, Dimension d, float scale,
-                   Color (*func)(double, double, int, bool, Range),
-                   bool channel, int quant, Range range, bool mirror,
-                   bool invert) {
+                   Color (*func)(Vec2, int, bool, Range), bool channel,
+                   int quant, Range range, bool mirror, bool invert) {
   png_structp png_ptr =
       png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (!png_ptr) {
@@ -189,9 +197,11 @@ void writePNGImage(FILE *f, Dimension d, float scale,
   for (int y = 0; y < d.height; y++) {
     for (int x = 0; x < d.width; x++) {
       if (channel) {
-        Color c1 = func(x * scale, y * scale, quant, mirror, range);
-        Color c2 = func((x + 1e10) * scale, y * scale, quant, mirror, range);
-        Color c3 = func(x * scale, (y + 1e10) * scale, quant, mirror, range);
+        Color c1 = func((Vec2){x * scale, y * scale}, quant, mirror, range);
+        Color c2 =
+            func((Vec2){(x + 1e10) * scale, y * scale}, quant, mirror, range);
+        Color c3 =
+            func((Vec2){x * scale, (y + 1e10) * scale}, quant, mirror, range);
 
         int r = c1.r;
         int g = c2.g;
@@ -207,7 +217,7 @@ void writePNGImage(FILE *f, Dimension d, float scale,
         row[3 * x + 1] = g;
         row[3 * x + 2] = b;
       } else {
-        Color c = func(x * scale, y * scale, quant, mirror, range);
+        Color c = func((Vec2){x * scale, y * scale}, quant, mirror, range);
 
         int r = c.r;
         int g = c.g;
@@ -232,8 +242,8 @@ void writePNGImage(FILE *f, Dimension d, float scale,
   free(row);
 }
 
-Color linear(double x, double y, int quantization, bool mirror, Range range) {
-  double f = noise(x, y) * 0.5 + 0.5;
+Color linear(Vec2 pos, int quantization, bool mirror, Range range) {
+  double f = noise(pos) * 0.5 + 0.5;
   if (mirror) {
     f = f < 0.5 ? 0.5 - f : f - 0.5;
   }
@@ -243,13 +253,13 @@ Color linear(double x, double y, int quantization, bool mirror, Range range) {
   return (Color){n, n, n};
 }
 
-Color fbm(double x, double y, int quantization, bool mirror, Range range) {
+Color fbm(Vec2 pos, int quantization, bool mirror, Range range) {
   double n = 0;
   double amplitude = 1;
   double frequency = 1;
 
   for (int i = 0; i < 8; i++) {
-    n += noise(x * frequency, y * frequency) * amplitude;
+    n += noise((Vec2){pos.x * frequency, pos.y * frequency}) * amplitude;
     amplitude *= 0.5;
     frequency *= 2;
   }
@@ -267,8 +277,8 @@ Color fbm(double x, double y, int quantization, bool mirror, Range range) {
   return (Color){m, m, m};
 }
 
-Color step(double x, double y, int quantization, bool mirror, Range range) {
-  double n = noise(x, y);
+Color step(Vec2 pos, int quantization, bool mirror, Range range) {
+  double n = noise(pos);
   n = map(n, range);
   return (Color){n > 0 ? 255 : 0, n > 0 ? 255 : 0, n > 0 ? 255 : 0};
 }
@@ -312,7 +322,7 @@ int main(int argc, char *argv[]) {
   Range range = {0, 1};
   bool mirror = false;
   bool invert = false;
-  Color (*func)(double, double, int, bool, Range) = linear;
+  Color (*func)(Vec2, int, bool, Range) = linear;
   enum { PPM, PNG } type = PPM;
 
   for (int i = 1; i < argc; i++) {
