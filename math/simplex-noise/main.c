@@ -55,7 +55,7 @@ typedef struct {
   double y;
 } Vec2;
 
-typedef StyleFunc Color (*)(Vec2, int, bool, Range);
+typedef Color (*StyleFunc)(Vec2, int, bool, Range);
 
 double dot(double g[], Vec2 v) { return g[0] * v.x + g[1] * v.y; }
 
@@ -117,9 +117,9 @@ double noise(Vec2 pos) {
   return 70.0 * (n0 + n1 + n2);
 }
 
-void writePPMImage(FILE *f, Dimension d, float scale,
-                   Color (*func)(Vec2, int, bool, Range), bool channel,
-                   int quant, Range range, bool mirror, bool invert) {
+void writePPMImage(FILE *f, Dimension d, float scale, StyleFunc func,
+                   bool channel, int quant, Range range, bool mirror,
+                   bool invert) {
   fprintf(f, "P3\n%d %d\n255\n", d.width, d.height);
   for (int y = 0; y < d.height; y++) {
     for (int x = 0; x < d.width; x++) {
@@ -160,9 +160,9 @@ void writePPMImage(FILE *f, Dimension d, float scale,
   }
 }
 
-void writePNGImage(FILE *f, Dimension d, float scale,
-                   Color (*func)(Vec2, int, bool, Range), bool channel,
-                   int quant, Range range, bool mirror, bool invert) {
+void writePNGImage(FILE *f, Dimension d, float scale, StyleFunc func,
+                   bool channel, int quant, Range range, bool mirror,
+                   bool invert) {
   png_structp png_ptr =
       png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (!png_ptr) {
@@ -318,7 +318,7 @@ int main(int argc, char *argv[]) {
   Range range = {0, 1};
   bool mirror = false;
   bool invert = false;
-  Color (*func)(Vec2, int, bool, Range) = linear;
+  StyleFunc func = linear;
   enum { PPM, PNG } type = PPM;
 
   for (int i = 1; i < argc; i++) {
