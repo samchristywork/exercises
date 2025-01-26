@@ -55,7 +55,22 @@ typedef struct {
   double y;
 } Vec2;
 
-typedef Color (*StyleFunc)(Vec2, int, bool, Range);
+typedef struct {
+  Dimension dimensions;
+  bool channel;
+  int quantization;
+  Range range;
+  bool mirror;
+  bool invert;
+} ImageProperties;
+
+typedef struct {
+  int quantization;
+  bool mirror;
+  Range range;
+} PixelProperties;
+
+typedef Color (*StyleFunc)(Vec2, PixelProperties);
 
 double dot(double g[], Vec2 v) { return g[0] * v.x + g[1] * v.y; }
 
@@ -117,24 +132,28 @@ double noise(Vec2 pos) {
   return 70.0 * (n0 + n1 + n2);
 }
 
-void writePPMImage(FILE *f, Dimension d, float scale, StyleFunc func,
-                   bool channel, int quant, Range range, bool mirror,
-                   bool invert) {
-  fprintf(f, "P3\n%d %d\n255\n", d.width, d.height);
-  for (int y = 0; y < d.height; y++) {
-    for (int x = 0; x < d.width; x++) {
-      if (channel) {
-        Color c1 = func((Vec2){x * scale, y * scale}, quant, mirror, range);
-        Color c2 =
-            func((Vec2){(x + 1e10) * scale, y * scale}, quant, mirror, range);
-        Color c3 =
-            func((Vec2){0 * scale, (y + 1e10) * scale}, quant, mirror, range);
+void writePPMImage(FILE *f, float scale, StyleFunc func,
+                   ImageProperties properties) {
+  PixelProperties pixelProperties = {
+      .quantization = properties.quantization,
+      .mirror = properties.mirror,
+      .range = properties.range,
+  };
+
+  fprintf(f, "P3\n%d %d\n255\n", properties.dimensions.width,
+          properties.dimensions.height);
+  for (int y = 0; y < properties.dimensions.height; y++) {
+    for (int x = 0; x < properties.dimensions.width; x++) {
+      if (properties.channel) {
+        Color c1 = func((Vec2){x * scale, y * scale}, pixelProperties);
+        Color c2 = func((Vec2){(x + 1e10) * scale, y * scale}, pixelProperties);
+        Color c3 = func((Vec2){0 * scale, (y + 1e10) * scale}, pixelProperties);
 
         int r = c1.r;
         int g = c2.g;
         int b = c3.b;
 
-        if (invert) {
+        if (properties.invert) {
           r = 255 - r;
           g = 255 - g;
           b = 255 - b;
@@ -142,13 +161,13 @@ void writePPMImage(FILE *f, Dimension d, float scale, StyleFunc func,
 
         fprintf(f, "%d %d %d ", r, g, b);
       } else {
-        Color c = func((Vec2){x * scale, y * scale}, quant, mirror, range);
+        Color c = func((Vec2){x * scale, y * scale}, pixelProperties);
 
         int r = c.r;
         int g = c.g;
         int b = c.b;
 
-        if (invert) {
+        if (properties.invert) {
           r = 255 - r;
           g = 255 - g;
           b = 255 - b;
@@ -160,9 +179,14 @@ void writePPMImage(FILE *f, Dimension d, float scale, StyleFunc func,
   }
 }
 
-void writePNGImage(FILE *f, Dimension d, float scale, StyleFunc func,
-                   bool channel, int quant, Range range, bool mirror,
-                   bool invert) {
+void writePNGImage(FILE *f, float scale, StyleFunc func,
+                   ImageProperties properties) {
+  PixelProperties pixelProperties = {
+      .quantization = properties.quantization,
+      .mirror = properties.mirror,
+      .range = properties.range,
+  };
+
   png_structp png_ptr =
       png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (!png_ptr) {
@@ -184,26 +208,25 @@ void writePNGImage(FILE *f, Dimension d, float scale, StyleFunc func,
   }
 
   png_init_io(png_ptr, f);
-  png_set_IHDR(png_ptr, info_ptr, d.width, d.height, 8, PNG_COLOR_TYPE_RGB,
+  png_set_IHDR(png_ptr, info_ptr, properties.dimensions.width,
+               properties.dimensions.height, 8, PNG_COLOR_TYPE_RGB,
                PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                PNG_FILTER_TYPE_DEFAULT);
   png_write_info(png_ptr, info_ptr);
 
-  png_bytep row = (png_bytep)malloc(3 * d.width);
-  for (int y = 0; y < d.height; y++) {
-    for (int x = 0; x < d.width; x++) {
-      if (channel) {
-        Color c1 = func((Vec2){x * scale, y * scale}, quant, mirror, range);
-        Color c2 =
-            func((Vec2){(x + 1e10) * scale, y * scale}, quant, mirror, range);
-        Color c3 =
-            func((Vec2){x * scale, (y + 1e10) * scale}, quant, mirror, range);
+  png_bytep row = (png_bytep)malloc(3 * properties.dimensions.width);
+  for (int y = 0; y < properties.dimensions.height; y++) {
+    for (int x = 0; x < properties.dimensions.width; x++) {
+      if (properties.channel) {
+        Color c1 = func((Vec2){x * scale, y * scale}, pixelProperties);
+        Color c2 = func((Vec2){(x + 1e10) * scale, y * scale}, pixelProperties);
+        Color c3 = func((Vec2){x * scale, (y + 1e10) * scale}, pixelProperties);
 
         int r = c1.r;
         int g = c2.g;
         int b = c3.b;
 
-        if (invert) {
+        if (properties.invert) {
           r = 255 - r;
           g = 255 - g;
           b = 255 - b;
@@ -213,13 +236,13 @@ void writePNGImage(FILE *f, Dimension d, float scale, StyleFunc func,
         row[3 * x + 1] = g;
         row[3 * x + 2] = b;
       } else {
-        Color c = func((Vec2){x * scale, y * scale}, quant, mirror, range);
+        Color c = func((Vec2){x * scale, y * scale}, pixelProperties);
 
         int r = c.r;
         int g = c.g;
         int b = c.b;
 
-        if (invert) {
+        if (properties.invert) {
           r = 255 - r;
           g = 255 - g;
           b = 255 - b;
@@ -238,18 +261,18 @@ void writePNGImage(FILE *f, Dimension d, float scale, StyleFunc func,
   free(row);
 }
 
-Color linear(Vec2 pos, int quantization, bool mirror, Range range) {
+Color linear(Vec2 pos, PixelProperties p) {
   double f = noise(pos) * 0.5 + 0.5;
-  if (mirror) {
+  if (p.mirror) {
     f = f < 0.5 ? 0.5 - f : f - 0.5;
   }
-  f = map(f, range);
-  int n = f * quantization;
-  n = n * 255 / quantization;
+  f = map(f, p.range);
+  int n = f * p.quantization;
+  n = n * 255 / p.quantization;
   return (Color){n, n, n};
 }
 
-Color fbm(Vec2 pos, int quantization, bool mirror, Range range) {
+Color fbm(Vec2 pos, PixelProperties p) {
   double n = 0;
   double amplitude = 1;
   double frequency = 1;
@@ -261,21 +284,21 @@ Color fbm(Vec2 pos, int quantization, bool mirror, Range range) {
   }
 
   n = n * 0.5 + 0.5;
-  if (mirror) {
+  if (p.mirror) {
     n = n < 0.5 ? 0.5 - n : n - 0.5;
   }
-  n = map(n, range);
+  n = map(n, p.range);
 
-  int m = n * quantization;
-  m = m * 255 / quantization;
+  int m = n * p.quantization;
+  m = m * 255 / p.quantization;
   m = MAX(MIN(m, 255), 0);
 
   return (Color){m, m, m};
 }
 
-Color step(Vec2 pos, int quantization, bool mirror, Range range) {
+Color step(Vec2 pos, PixelProperties p) {
   double n = noise(pos);
-  n = map(n, range);
+  n = map(n, p.range);
   return (Color){n > 0 ? 255 : 0, n > 0 ? 255 : 0, n > 0 ? 255 : 0};
 }
 
@@ -310,23 +333,25 @@ void usage(char *name) {
 }
 
 int main(int argc, char *argv[]) {
-  Dimension d = {512, 512};
   float scale = 0.01;
   FILE *f = stdout;
-  bool channel = false;
-  int quantization = 256;
-  Range range = {0, 1};
-  bool mirror = false;
-  bool invert = false;
   StyleFunc func = linear;
   enum { PPM, PNG } type = PPM;
+  ImageProperties properties = {
+      .dimensions = {512, 512},
+      .channel = false,
+      .quantization = 256,
+      .range = {0, 1},
+      .mirror = false,
+      .invert = false,
+  };
 
   for (int i = 1; i < argc; i++) {
     if (argv[i][0] == '-') {
       if (argv[i][1] == 'w' && i + 1 < argc) {
-        d.width = atoi(argv[++i]);
+        properties.dimensions.width = atoi(argv[++i]);
       } else if (argv[i][1] == 'h' && i + 1 < argc) {
-        d.height = atoi(argv[++i]);
+        properties.dimensions.height = atoi(argv[++i]);
       } else if (argv[i][1] == 's' && i + 1 < argc) {
         scale = atof(argv[++i]);
       } else if (argv[i][1] == 't' && i + 1 < argc) {
@@ -354,19 +379,20 @@ int main(int argc, char *argv[]) {
           usage(argv[0]);
         }
       } else if (argv[i][1] == 'u' && i + 1 < argc) {
-        range.max = atof(argv[++i]);
+        properties.range.max = atof(argv[++i]);
       } else if (argv[i][1] == 'l' && i + 1 < argc) {
-        range.min = atof(argv[++i]);
+        properties.range.min = atof(argv[++i]);
       } else if (argv[i][1] == 'c') {
-        channel = true;
+        properties.channel = true;
       } else if (argv[i][1] == 'm') {
-        mirror = true;
+        properties.mirror = true;
       } else if (argv[i][1] == 'i') {
-        invert = true;
+        properties.invert = true;
       } else if (argv[i][1] == 'q' && i + 1 < argc) {
-        quantization = atoi(argv[++i]);
-        if (quantization <= 0) {
-          fprintf(stderr, "Error: quantization must be greater than 0\n");
+        properties.quantization = atoi(argv[++i]);
+        if (properties.quantization <= 0) {
+          fprintf(stderr,
+                  "Error: quantization factor must be greater than 0\n");
           exit(EXIT_FAILURE);
         }
       } else if (argv[i][1] == 'h') {
@@ -384,12 +410,10 @@ int main(int argc, char *argv[]) {
 
   switch (type) {
   case PPM:
-    writePPMImage(f, d, scale, func, channel, quantization, range, mirror,
-                  invert);
+    writePPMImage(f, scale, func, properties);
     break;
   case PNG:
-    writePNGImage(f, d, scale, func, channel, quantization, range, mirror,
-                  invert);
+    writePNGImage(f, scale, func, properties);
     break;
   default:
     usage(argv[0]);
