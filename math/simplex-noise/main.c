@@ -56,21 +56,23 @@ typedef struct {
 } Vec2;
 
 typedef struct {
-  Dimension dimensions;
-  bool channel;
-  int quantization;
-  Range range;
-  bool mirror;
-  bool invert;
-} ImageProperties;
-
-typedef struct {
   int quantization;
   bool mirror;
   Range range;
 } PixelProperties;
 
 typedef Color (*StyleFunc)(Vec2, PixelProperties);
+
+typedef struct {
+  Dimension dimensions;
+  bool channel;
+  int quantization;
+  Range range;
+  bool mirror;
+  bool invert;
+  double scale;
+  StyleFunc func;
+} ImageProperties;
 
 double dot(double g[], Vec2 v) { return g[0] * v.x + g[1] * v.y; }
 
@@ -132,8 +134,7 @@ double noise(Vec2 pos) {
   return 70.0 * (n0 + n1 + n2);
 }
 
-void writePPMImage(FILE *f, float scale, StyleFunc func,
-                   ImageProperties properties) {
+void writePPMImage(FILE *f, ImageProperties properties) {
   PixelProperties pixelProperties = {
       .quantization = properties.quantization,
       .mirror = properties.mirror,
@@ -145,6 +146,8 @@ void writePPMImage(FILE *f, float scale, StyleFunc func,
   for (int y = 0; y < properties.dimensions.height; y++) {
     for (int x = 0; x < properties.dimensions.width; x++) {
       if (properties.channel) {
+        double scale = properties.scale;
+        StyleFunc func = properties.func;
         Color c1 = func((Vec2){x * scale, y * scale}, pixelProperties);
         Color c2 = func((Vec2){(x + 1e10) * scale, y * scale}, pixelProperties);
         Color c3 = func((Vec2){0 * scale, (y + 1e10) * scale}, pixelProperties);
@@ -161,6 +164,8 @@ void writePPMImage(FILE *f, float scale, StyleFunc func,
 
         fprintf(f, "%d %d %d ", r, g, b);
       } else {
+        double scale = properties.scale;
+        StyleFunc func = properties.func;
         Color c = func((Vec2){x * scale, y * scale}, pixelProperties);
 
         int r = c.r;
@@ -179,8 +184,7 @@ void writePPMImage(FILE *f, float scale, StyleFunc func,
   }
 }
 
-void writePNGImage(FILE *f, float scale, StyleFunc func,
-                   ImageProperties properties) {
+void writePNGImage(FILE *f, ImageProperties properties) {
   PixelProperties pixelProperties = {
       .quantization = properties.quantization,
       .mirror = properties.mirror,
@@ -218,6 +222,8 @@ void writePNGImage(FILE *f, float scale, StyleFunc func,
   for (int y = 0; y < properties.dimensions.height; y++) {
     for (int x = 0; x < properties.dimensions.width; x++) {
       if (properties.channel) {
+        double scale = properties.scale;
+        StyleFunc func = properties.func;
         Color c1 = func((Vec2){x * scale, y * scale}, pixelProperties);
         Color c2 = func((Vec2){(x + 1e10) * scale, y * scale}, pixelProperties);
         Color c3 = func((Vec2){x * scale, (y + 1e10) * scale}, pixelProperties);
@@ -236,6 +242,8 @@ void writePNGImage(FILE *f, float scale, StyleFunc func,
         row[3 * x + 1] = g;
         row[3 * x + 2] = b;
       } else {
+        double scale = properties.scale;
+        StyleFunc func = properties.func;
         Color c = func((Vec2){x * scale, y * scale}, pixelProperties);
 
         int r = c.r;
@@ -333,9 +341,7 @@ void usage(char *name) {
 }
 
 int main(int argc, char *argv[]) {
-  float scale = 0.01;
   FILE *f = stdout;
-  StyleFunc func = linear;
   enum { PPM, PNG } type = PPM;
   ImageProperties properties = {
       .dimensions = {512, 512},
@@ -344,6 +350,8 @@ int main(int argc, char *argv[]) {
       .range = {0, 1},
       .mirror = false,
       .invert = false,
+      .scale = 0.01,
+      .func = linear,
   };
 
   for (int i = 1; i < argc; i++) {
@@ -353,7 +361,7 @@ int main(int argc, char *argv[]) {
       } else if (argv[i][1] == 'h' && i + 1 < argc) {
         properties.dimensions.height = atoi(argv[++i]);
       } else if (argv[i][1] == 's' && i + 1 < argc) {
-        scale = atof(argv[++i]);
+        properties.scale = atof(argv[++i]);
       } else if (argv[i][1] == 't' && i + 1 < argc) {
         if (strcmp(argv[++i], "ppm") == 0) {
           type = PPM;
@@ -370,11 +378,11 @@ int main(int argc, char *argv[]) {
         }
       } else if (argv[i][1] == 'r' && i + 1 < argc) {
         if (strcmp(argv[++i], "linear") == 0) {
-          func = linear;
+          properties.func = linear;
         } else if (strcmp(argv[i], "fbm") == 0) {
-          func = fbm;
+          properties.func = fbm;
         } else if (strcmp(argv[i], "step") == 0) {
-          func = step;
+          properties.func = step;
         } else {
           usage(argv[0]);
         }
@@ -410,10 +418,10 @@ int main(int argc, char *argv[]) {
 
   switch (type) {
   case PPM:
-    writePPMImage(f, scale, func, properties);
+    writePPMImage(f, properties);
     break;
   case PNG:
-    writePNGImage(f, scale, func, properties);
+    writePNGImage(f, properties);
     break;
   default:
     usage(argv[0]);
