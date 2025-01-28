@@ -149,8 +149,8 @@ void writePPMImage(FILE *f, ImageProperties properties) {
         double scale = properties.scale;
         StyleFunc func = properties.func;
         Color c1 = func((Vec2){x * scale, y * scale}, pixelProperties);
-        Color c2 = func((Vec2){(x + 1e10) * scale, y * scale}, pixelProperties);
-        Color c3 = func((Vec2){0 * scale, (y + 1e10) * scale}, pixelProperties);
+        Color c2 = func((Vec2){(x + 1e5) * scale, y * scale}, pixelProperties);
+        Color c3 = func((Vec2){x * scale, (y + 1e5) * scale}, pixelProperties);
 
         int r = c1.r;
         int g = c2.g;
@@ -225,8 +225,8 @@ void writePNGImage(FILE *f, ImageProperties properties) {
         double scale = properties.scale;
         StyleFunc func = properties.func;
         Color c1 = func((Vec2){x * scale, y * scale}, pixelProperties);
-        Color c2 = func((Vec2){(x + 1e10) * scale, y * scale}, pixelProperties);
-        Color c3 = func((Vec2){x * scale, (y + 1e10) * scale}, pixelProperties);
+        Color c2 = func((Vec2){(x + 1e5) * scale, y * scale}, pixelProperties);
+        Color c3 = func((Vec2){x * scale, (y + 1e5) * scale}, pixelProperties);
 
         int r = c1.r;
         int g = c2.g;
