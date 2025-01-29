@@ -59,6 +59,7 @@ typedef struct {
   int quantization;
   bool mirror;
   Range range;
+  double scale;
 } PixelProperties;
 
 typedef Color (*StyleFunc)(Vec2, PixelProperties);
@@ -134,11 +135,20 @@ double noise(Vec2 pos) {
   return 70.0 * (n0 + n1 + n2);
 }
 
+Color mixOffsetNoise(Vec2 pos, PixelProperties p, StyleFunc func) {
+  Color c1 = func((Vec2){pos.x * p.scale, pos.y * p.scale}, p);
+  Color c2 = func((Vec2){pos.x * p.scale + 1e5, pos.y * p.scale}, p);
+  Color c3 = func((Vec2){pos.x * p.scale, pos.y * p.scale + 1e5}, p);
+
+  return (Color){c1.r, c2.g, c3.b};
+}
+
 void writePPMImage(FILE *f, ImageProperties properties) {
   PixelProperties pixelProperties = {
       .quantization = properties.quantization,
       .mirror = properties.mirror,
       .range = properties.range,
+      .scale = properties.scale,
   };
 
   fprintf(f, "P3\n%d %d\n255\n", properties.dimensions.width,
@@ -146,15 +156,12 @@ void writePPMImage(FILE *f, ImageProperties properties) {
   for (int y = 0; y < properties.dimensions.height; y++) {
     for (int x = 0; x < properties.dimensions.width; x++) {
       if (properties.channel) {
-        double scale = properties.scale;
-        StyleFunc func = properties.func;
-        Color c1 = func((Vec2){x * scale, y * scale}, pixelProperties);
-        Color c2 = func((Vec2){(x + 1e5) * scale, y * scale}, pixelProperties);
-        Color c3 = func((Vec2){x * scale, (y + 1e5) * scale}, pixelProperties);
+        Color c =
+            mixOffsetNoise((Vec2){x, y}, pixelProperties, properties.func);
 
-        int r = c1.r;
-        int g = c2.g;
-        int b = c3.b;
+        int r = c.r;
+        int g = c.g;
+        int b = c.b;
 
         if (properties.invert) {
           r = 255 - r;
@@ -165,8 +172,8 @@ void writePPMImage(FILE *f, ImageProperties properties) {
         fprintf(f, "%d %d %d ", r, g, b);
       } else {
         double scale = properties.scale;
-        StyleFunc func = properties.func;
-        Color c = func((Vec2){x * scale, y * scale}, pixelProperties);
+        Color c =
+            properties.func((Vec2){x * scale, y * scale}, pixelProperties);
 
         int r = c.r;
         int g = c.g;
@@ -189,6 +196,7 @@ void writePNGImage(FILE *f, ImageProperties properties) {
       .quantization = properties.quantization,
       .mirror = properties.mirror,
       .range = properties.range,
+      .scale = properties.scale,
   };
 
   png_structp png_ptr =
@@ -222,15 +230,12 @@ void writePNGImage(FILE *f, ImageProperties properties) {
   for (int y = 0; y < properties.dimensions.height; y++) {
     for (int x = 0; x < properties.dimensions.width; x++) {
       if (properties.channel) {
-        double scale = properties.scale;
-        StyleFunc func = properties.func;
-        Color c1 = func((Vec2){x * scale, y * scale}, pixelProperties);
-        Color c2 = func((Vec2){(x + 1e5) * scale, y * scale}, pixelProperties);
-        Color c3 = func((Vec2){x * scale, (y + 1e5) * scale}, pixelProperties);
+        Color c =
+            mixOffsetNoise((Vec2){x, y}, pixelProperties, properties.func);
 
-        int r = c1.r;
-        int g = c2.g;
-        int b = c3.b;
+        int r = c.r;
+        int g = c.g;
+        int b = c.b;
 
         if (properties.invert) {
           r = 255 - r;
@@ -243,8 +248,8 @@ void writePNGImage(FILE *f, ImageProperties properties) {
         row[3 * x + 2] = b;
       } else {
         double scale = properties.scale;
-        StyleFunc func = properties.func;
-        Color c = func((Vec2){x * scale, y * scale}, pixelProperties);
+        Color c =
+            properties.func((Vec2){x * scale, y * scale}, pixelProperties);
 
         int r = c.r;
         int g = c.g;
