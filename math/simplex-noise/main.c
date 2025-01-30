@@ -155,38 +155,25 @@ void writePPMImage(FILE *f, ImageProperties properties) {
           properties.dimensions.height);
   for (int y = 0; y < properties.dimensions.height; y++) {
     for (int x = 0; x < properties.dimensions.width; x++) {
+      Color c;
       if (properties.channel) {
-        Color c =
-            mixOffsetNoise((Vec2){x, y}, pixelProperties, properties.func);
-
-        int r = c.r;
-        int g = c.g;
-        int b = c.b;
-
-        if (properties.invert) {
-          r = 255 - r;
-          g = 255 - g;
-          b = 255 - b;
-        }
-
-        fprintf(f, "%d %d %d ", r, g, b);
+        c = mixOffsetNoise((Vec2){x, y}, pixelProperties, properties.func);
       } else {
-        double scale = properties.scale;
-        Color c =
-            properties.func((Vec2){x * scale, y * scale}, pixelProperties);
-
-        int r = c.r;
-        int g = c.g;
-        int b = c.b;
-
-        if (properties.invert) {
-          r = 255 - r;
-          g = 255 - g;
-          b = 255 - b;
-        }
-
-        fprintf(f, "%d %d %d ", r, g, b);
+        c = properties.func((Vec2){x * properties.scale, y * properties.scale},
+                            pixelProperties);
       }
+
+      int r = c.r;
+      int g = c.g;
+      int b = c.b;
+
+      if (properties.invert) {
+        r = 255 - r;
+        g = 255 - g;
+        b = 255 - b;
+      }
+
+      fprintf(f, "%d %d %d ", r, g, b);
     }
   }
 }
@@ -229,42 +216,27 @@ void writePNGImage(FILE *f, ImageProperties properties) {
   png_bytep row = (png_bytep)malloc(3 * properties.dimensions.width);
   for (int y = 0; y < properties.dimensions.height; y++) {
     for (int x = 0; x < properties.dimensions.width; x++) {
+      Color c;
       if (properties.channel) {
-        Color c =
-            mixOffsetNoise((Vec2){x, y}, pixelProperties, properties.func);
-
-        int r = c.r;
-        int g = c.g;
-        int b = c.b;
-
-        if (properties.invert) {
-          r = 255 - r;
-          g = 255 - g;
-          b = 255 - b;
-        }
-
-        row[3 * x + 0] = r;
-        row[3 * x + 1] = g;
-        row[3 * x + 2] = b;
+        c = mixOffsetNoise((Vec2){x, y}, pixelProperties, properties.func);
       } else {
-        double scale = properties.scale;
-        Color c =
-            properties.func((Vec2){x * scale, y * scale}, pixelProperties);
-
-        int r = c.r;
-        int g = c.g;
-        int b = c.b;
-
-        if (properties.invert) {
-          r = 255 - r;
-          g = 255 - g;
-          b = 255 - b;
-        }
-
-        row[3 * x + 0] = r;
-        row[3 * x + 1] = g;
-        row[3 * x + 2] = b;
+        c = properties.func((Vec2){x * properties.scale, y * properties.scale},
+                            pixelProperties);
       }
+
+      int r = c.r;
+      int g = c.g;
+      int b = c.b;
+
+      if (properties.invert) {
+        r = 255 - r;
+        g = 255 - g;
+        b = 255 - b;
+      }
+
+      row[3 * x + 0] = r;
+      row[3 * x + 1] = g;
+      row[3 * x + 2] = b;
     }
     png_write_row(png_ptr, row);
   }
