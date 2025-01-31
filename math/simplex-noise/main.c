@@ -163,17 +163,13 @@ void writePPMImage(FILE *f, ImageProperties properties) {
                             pixelProperties);
       }
 
-      int r = c.r;
-      int g = c.g;
-      int b = c.b;
-
       if (properties.invert) {
-        r = 255 - r;
-        g = 255 - g;
-        b = 255 - b;
+        c.r = 255 - c.r;
+        c.g = 255 - c.g;
+        c.b = 255 - c.b;
       }
 
-      fprintf(f, "%d %d %d ", r, g, b);
+      fprintf(f, "%d %d %d ", c.r, c.g, c.b);
     }
   }
 }
@@ -224,19 +220,15 @@ void writePNGImage(FILE *f, ImageProperties properties) {
                             pixelProperties);
       }
 
-      int r = c.r;
-      int g = c.g;
-      int b = c.b;
-
       if (properties.invert) {
-        r = 255 - r;
-        g = 255 - g;
-        b = 255 - b;
+        c.r = 255 - c.r;
+        c.g = 255 - c.g;
+        c.b = 255 - c.b;
       }
 
-      row[3 * x + 0] = r;
-      row[3 * x + 1] = g;
-      row[3 * x + 2] = b;
+      row[3 * x + 0] = c.r;
+      row[3 * x + 1] = c.g;
+      row[3 * x + 2] = c.b;
     }
     png_write_row(png_ptr, row);
   }
