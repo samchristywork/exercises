@@ -77,6 +77,8 @@ typedef struct {
 
 double dot(double g[], Vec2 v) { return g[0] * v.x + g[1] * v.y; }
 
+Color invert(Color c) { return (Color){255 - c.r, 255 - c.g, 255 - c.b}; }
+
 double noise(Vec2 pos) {
   const double F2 = 0.5 * (sqrt(3.0) - 1.0);
   const double G2 = (3.0 - sqrt(3.0)) / 6.0;
@@ -164,9 +166,7 @@ void writePPMImage(FILE *f, ImageProperties properties) {
       }
 
       if (properties.invert) {
-        c.r = 255 - c.r;
-        c.g = 255 - c.g;
-        c.b = 255 - c.b;
+        c = invert(c);
       }
 
       fprintf(f, "%d %d %d ", c.r, c.g, c.b);
@@ -221,9 +221,7 @@ void writePNGImage(FILE *f, ImageProperties properties) {
       }
 
       if (properties.invert) {
-        c.r = 255 - c.r;
-        c.g = 255 - c.g;
-        c.b = 255 - c.b;
+        c = invert(c);
       }
 
       row[3 * x + 0] = c.r;
