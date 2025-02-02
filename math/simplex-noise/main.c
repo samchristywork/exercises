@@ -145,6 +145,22 @@ Color mixOffsetNoise(Vec2 pos, PixelProperties p, StyleFunc func) {
   return (Color){c1.r, c2.g, c3.b};
 }
 
+Color generateColor(Vec2 pos, ImageProperties ip, PixelProperties pp) {
+  Color c;
+
+  if (ip.channel) {
+    c = mixOffsetNoise(pos, pp, ip.func);
+  } else {
+    c = ip.func((Vec2){pos.x * ip.scale, pos.y * ip.scale}, pp);
+  }
+
+  if (ip.invert) {
+    c = invert(c);
+  }
+
+  return c;
+}
+
 void writePPMImage(FILE *f, ImageProperties properties) {
   PixelProperties pixelProperties = {
       .quantization = properties.quantization,
@@ -157,17 +173,7 @@ void writePPMImage(FILE *f, ImageProperties properties) {
           properties.dimensions.height);
   for (int y = 0; y < properties.dimensions.height; y++) {
     for (int x = 0; x < properties.dimensions.width; x++) {
-      Color c;
-      if (properties.channel) {
-        c = mixOffsetNoise((Vec2){x, y}, pixelProperties, properties.func);
-      } else {
-        c = properties.func((Vec2){x * properties.scale, y * properties.scale},
-                            pixelProperties);
-      }
-
-      if (properties.invert) {
-        c = invert(c);
-      }
+      Color c = generateColor((Vec2){x, y}, properties, pixelProperties);
 
       fprintf(f, "%d %d %d ", c.r, c.g, c.b);
     }
@@ -212,17 +218,7 @@ void writePNGImage(FILE *f, ImageProperties properties) {
   png_bytep row = (png_bytep)malloc(3 * properties.dimensions.width);
   for (int y = 0; y < properties.dimensions.height; y++) {
     for (int x = 0; x < properties.dimensions.width; x++) {
-      Color c;
-      if (properties.channel) {
-        c = mixOffsetNoise((Vec2){x, y}, pixelProperties, properties.func);
-      } else {
-        c = properties.func((Vec2){x * properties.scale, y * properties.scale},
-                            pixelProperties);
-      }
-
-      if (properties.invert) {
-        c = invert(c);
-      }
+      Color c = generateColor((Vec2){x, y}, properties, pixelProperties);
 
       row[3 * x + 0] = c.r;
       row[3 * x + 1] = c.g;
