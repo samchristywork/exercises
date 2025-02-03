@@ -145,7 +145,14 @@ Color mixOffsetNoise(Vec2 pos, PixelProperties p, StyleFunc func) {
   return (Color){c1.r, c2.g, c3.b};
 }
 
-Color generateColor(Vec2 pos, ImageProperties ip, PixelProperties pp) {
+Color generateColor(Vec2 pos, ImageProperties ip) {
+  PixelProperties pp = {
+      .quantization = ip.quantization,
+      .mirror = ip.mirror,
+      .range = ip.range,
+      .scale = ip.scale,
+  };
+
   Color c;
 
   if (ip.channel) {
@@ -162,18 +169,11 @@ Color generateColor(Vec2 pos, ImageProperties ip, PixelProperties pp) {
 }
 
 void writePPMImage(FILE *f, ImageProperties properties) {
-  PixelProperties pixelProperties = {
-      .quantization = properties.quantization,
-      .mirror = properties.mirror,
-      .range = properties.range,
-      .scale = properties.scale,
-  };
-
   fprintf(f, "P3\n%d %d\n255\n", properties.dimensions.width,
           properties.dimensions.height);
   for (int y = 0; y < properties.dimensions.height; y++) {
     for (int x = 0; x < properties.dimensions.width; x++) {
-      Color c = generateColor((Vec2){x, y}, properties, pixelProperties);
+      Color c = generateColor((Vec2){x, y}, properties);
 
       fprintf(f, "%d %d %d ", c.r, c.g, c.b);
     }
@@ -181,13 +181,6 @@ void writePPMImage(FILE *f, ImageProperties properties) {
 }
 
 void writePNGImage(FILE *f, ImageProperties properties) {
-  PixelProperties pixelProperties = {
-      .quantization = properties.quantization,
-      .mirror = properties.mirror,
-      .range = properties.range,
-      .scale = properties.scale,
-  };
-
   png_structp png_ptr =
       png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (!png_ptr) {
@@ -218,7 +211,7 @@ void writePNGImage(FILE *f, ImageProperties properties) {
   png_bytep row = (png_bytep)malloc(3 * properties.dimensions.width);
   for (int y = 0; y < properties.dimensions.height; y++) {
     for (int x = 0; x < properties.dimensions.width; x++) {
-      Color c = generateColor((Vec2){x, y}, properties, pixelProperties);
+      Color c = generateColor((Vec2){x, y}, properties);
 
       row[3 * x + 0] = c.r;
       row[3 * x + 1] = c.g;
