@@ -75,6 +75,7 @@ typedef struct {
   double scale;
   StyleFunc func;
   bool square;
+  Vec2 offset;
 } ImageProperties;
 
 double dot(double g[], Vec2 v) { return g[0] * v.x + g[1] * v.y; }
@@ -157,6 +158,9 @@ Color generateColor(Vec2 pos, ImageProperties ip) {
   };
 
   Color c;
+
+  pos.x += ip.offset.x;
+  pos.y += ip.offset.y;
 
   if (ip.channel) {
     c = mixOffsetNoise(pos, pp, ip.func);
@@ -305,6 +309,7 @@ void usage(char *name) {
          "  -i            Invert the noise\n"
          "  -q <n>        Color quantization modifier (default 256)\n"
          "  -d            Square the noise (v = v^2)\n"
+         "  -o <XxY>      Offset the noise in the X and Y direction\n"
          "  -h            Show this help message\n"
          "\n"
          "Supported file types:\n"
@@ -332,6 +337,7 @@ int main(int argc, char *argv[]) {
       .scale = 0.01,
       .func = linear,
       .square = false,
+      .offset = {0, 0},
   };
 
   for (int i = 1; i < argc; i++) {
@@ -385,6 +391,9 @@ int main(int argc, char *argv[]) {
         }
       } else if (argv[i][1] == 'd') {
         properties.square = true;
+      } else if (argv[i][1] == 'o' && i + 1 < argc) {
+        sscanf(argv[++i], "%lfx%lf", &properties.offset.x,
+               &properties.offset.y);
       } else if (argv[i][1] == 'h') {
         usage(argv[0]);
       } else {
