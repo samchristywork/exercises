@@ -60,7 +60,7 @@ typedef struct {
   bool mirror;
   Range range;
   double scale;
-  bool square;
+  int exponent;
 } PixelProperties;
 
 typedef Color (*StyleFunc)(Vec2, PixelProperties);
@@ -74,7 +74,7 @@ typedef struct {
   bool invert;
   double scale;
   StyleFunc func;
-  bool square;
+  int exponent;
   Vec2 offset;
 } ImageProperties;
 
@@ -154,7 +154,7 @@ Color generateColor(Vec2 pos, ImageProperties ip) {
       .mirror = ip.mirror,
       .range = ip.range,
       .scale = ip.scale,
-      .square = ip.square,
+      .exponent = ip.exponent,
   };
 
   Color c;
@@ -238,9 +238,7 @@ Color linear(Vec2 pos, PixelProperties p) {
     f = f < 0.5 ? 0.5 - f : f - 0.5;
   }
 
-  if (p.square) {
-    f = f * f;
-  }
+  f = pow(f, p.exponent);
 
   f = map(f, p.range);
   int n = f * p.quantization;
@@ -264,9 +262,7 @@ Color fbm(Vec2 pos, PixelProperties p) {
     n = n < 0.5 ? 0.5 - n : n - 0.5;
   }
 
-  if (p.square) {
-    n = n * n;
-  }
+  n = pow(n, p.exponent);
 
   n = map(n, p.range);
 
@@ -284,9 +280,7 @@ Color step(Vec2 pos, PixelProperties p) {
     n = n < 0 ? -n : n;
   }
 
-  if (p.square) {
-    n = n * n;
-  }
+  n = pow(n, p.exponent);
 
   n = map(n, p.range);
   return (Color){n > 0 ? 255 : 0, n > 0 ? 255 : 0, n > 0 ? 255 : 0};
@@ -308,8 +302,8 @@ void usage(char *name) {
          "  -m            Mirror the noise in the value domain\n"
          "  -i            Invert the noise\n"
          "  -q <n>        Color quantization modifier (default 256)\n"
-         "  -d            Square the noise (v = v^2)\n"
          "  -o <XxY>      Offset the noise in the X and Y direction\n"
+         "  -e <n>        Exponent for the noise (v = v^n)\n"
          "  -h            Show this help message\n"
          "\n"
          "Supported file types:\n"
@@ -336,7 +330,7 @@ int main(int argc, char *argv[]) {
       .invert = false,
       .scale = 0.01,
       .func = linear,
-      .square = false,
+      .exponent = 1,
       .offset = {0, 0},
   };
 
@@ -389,11 +383,11 @@ int main(int argc, char *argv[]) {
                   "Error: quantization factor must be greater than 0\n");
           exit(EXIT_FAILURE);
         }
-      } else if (argv[i][1] == 'd') {
-        properties.square = true;
       } else if (argv[i][1] == 'o' && i + 1 < argc) {
         sscanf(argv[++i], "%lfx%lf", &properties.offset.x,
                &properties.offset.y);
+      } else if (argv[i][1] == 'e' && i + 1 < argc) {
+        properties.exponent = atoi(argv[++i]);
       } else if (argv[i][1] == 'h') {
         usage(argv[0]);
       } else {
