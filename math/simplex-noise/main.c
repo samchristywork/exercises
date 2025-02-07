@@ -68,14 +68,10 @@ typedef Color (*StyleFunc)(Vec2, PixelProperties);
 typedef struct {
   Dimension dimensions;
   bool channel;
-  int quantization;
-  Range range;
-  bool mirror;
   bool invert;
-  double scale;
   StyleFunc func;
-  int exponent;
   Vec2 offset;
+  PixelProperties pixelProperties;
 } ImageProperties;
 
 double dot(double g[], Vec2 v) { return g[0] * v.x + g[1] * v.y; }
@@ -148,27 +144,20 @@ Color mixOffsetNoise(Vec2 pos, PixelProperties p, StyleFunc func) {
   return (Color){c1.r, c2.g, c3.b};
 }
 
-Color generateColor(Vec2 pos, ImageProperties ip) {
-  PixelProperties pp = {
-      .quantization = ip.quantization,
-      .mirror = ip.mirror,
-      .range = ip.range,
-      .scale = ip.scale,
-      .exponent = ip.exponent,
-  };
-
+Color generateColor(Vec2 pos, ImageProperties p) {
   Color c;
 
-  pos.x += ip.offset.x;
-  pos.y += ip.offset.y;
+  pos.x += p.offset.x;
+  pos.y += p.offset.y;
 
-  if (ip.channel) {
-    c = mixOffsetNoise(pos, pp, ip.func);
+  if (p.channel) {
+    c = mixOffsetNoise(pos, p.pixelProperties, p.func);
   } else {
-    c = ip.func((Vec2){pos.x * ip.scale, pos.y * ip.scale}, pp);
+    double scale = p.pixelProperties.scale;
+    c = p.func((Vec2){pos.x * scale, pos.y * scale}, p.pixelProperties);
   }
 
-  if (ip.invert) {
+  if (p.invert) {
     c = invert(c);
   }
 
@@ -324,13 +313,14 @@ int main(int argc, char *argv[]) {
   ImageProperties properties = {
       .dimensions = {512, 512},
       .channel = false,
-      .quantization = 256,
-      .range = {0, 1},
-      .mirror = false,
-      .invert = false,
-      .scale = 0.01,
+      .pixelProperties =
+          {
+              .quantization = 256,
+              .range = {0, 1},
+              .scale = 0.01,
+              .exponent = 1,
+          },
       .func = linear,
-      .exponent = 1,
       .offset = {0, 0},
   };
 
@@ -341,7 +331,7 @@ int main(int argc, char *argv[]) {
       } else if (argv[i][1] == 'h' && i + 1 < argc) {
         properties.dimensions.height = atoi(argv[++i]);
       } else if (argv[i][1] == 's' && i + 1 < argc) {
-        properties.scale = atof(argv[++i]);
+        properties.pixelProperties.scale = atof(argv[++i]);
       } else if (argv[i][1] == 't' && i + 1 < argc) {
         if (strcmp(argv[++i], "ppm") == 0) {
           type = PPM;
@@ -367,18 +357,18 @@ int main(int argc, char *argv[]) {
           usage(argv[0]);
         }
       } else if (argv[i][1] == 'u' && i + 1 < argc) {
-        properties.range.max = atof(argv[++i]);
+        properties.pixelProperties.range.max = atof(argv[++i]);
       } else if (argv[i][1] == 'l' && i + 1 < argc) {
-        properties.range.min = atof(argv[++i]);
+        properties.pixelProperties.range.min = atof(argv[++i]);
       } else if (argv[i][1] == 'c') {
         properties.channel = true;
       } else if (argv[i][1] == 'm') {
-        properties.mirror = true;
+        properties.pixelProperties.mirror = true;
       } else if (argv[i][1] == 'i') {
         properties.invert = true;
       } else if (argv[i][1] == 'q' && i + 1 < argc) {
-        properties.quantization = atoi(argv[++i]);
-        if (properties.quantization <= 0) {
+        properties.pixelProperties.quantization = atoi(argv[++i]);
+        if (properties.pixelProperties.quantization <= 0) {
           fprintf(stderr,
                   "Error: quantization factor must be greater than 0\n");
           exit(EXIT_FAILURE);
@@ -387,7 +377,7 @@ int main(int argc, char *argv[]) {
         sscanf(argv[++i], "%lfx%lf", &properties.offset.x,
                &properties.offset.y);
       } else if (argv[i][1] == 'e' && i + 1 < argc) {
-        properties.exponent = atoi(argv[++i]);
+        properties.pixelProperties.exponent = atoi(argv[++i]);
       } else if (argv[i][1] == 'h') {
         usage(argv[0]);
       } else {
