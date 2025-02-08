@@ -61,6 +61,7 @@ typedef struct {
   Range range;
   double scale;
   int exponent;
+  bool allowOverflow;
 } PixelProperties;
 
 typedef Color (*StyleFunc)(Vec2, PixelProperties);
@@ -232,6 +233,11 @@ Color linear(Vec2 pos, PixelProperties p) {
   f = map(f, p.range);
   int n = f * p.quantization;
   n = n * 255 / p.quantization;
+
+  if (!p.allowOverflow) {
+    n = MAX(MIN(n, 255), 0);
+  }
+
   return (Color){n, n, n};
 }
 
@@ -257,7 +263,10 @@ Color fbm(Vec2 pos, PixelProperties p) {
 
   int m = n * p.quantization;
   m = m * 255 / p.quantization;
-  m = MAX(MIN(m, 255), 0);
+
+  if (!p.allowOverflow) {
+    m = MAX(MIN(m, 255), 0);
+  }
 
   return (Color){m, m, m};
 }
@@ -293,6 +302,7 @@ void usage(char *name) {
          "  -q <n>        Color quantization modifier (default 256)\n"
          "  -o <XxY>      Offset the noise in the X and Y direction\n"
          "  -e <n>        Exponent for the noise (v = v^n)\n"
+         "  -a            Allow overflow (default false)\n"
          "  -h            Show this help message\n"
          "\n"
          "Supported file types:\n"
@@ -319,6 +329,7 @@ int main(int argc, char *argv[]) {
               .range = {0, 1},
               .scale = 0.01,
               .exponent = 1,
+              .allowOverflow = false,
           },
       .func = linear,
       .offset = {0, 0},
@@ -378,6 +389,8 @@ int main(int argc, char *argv[]) {
                &properties.offset.y);
       } else if (argv[i][1] == 'e' && i + 1 < argc) {
         properties.pixelProperties.exponent = atoi(argv[++i]);
+      } else if (argv[i][1] == 'a') {
+        properties.pixelProperties.allowOverflow = true;
       } else if (argv[i][1] == 'h') {
         usage(argv[0]);
       } else {
