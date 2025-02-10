@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,3 +39,28 @@ void fft(Complex *X, int n) {
   free(even);
   free(odd);
 }
+
+#ifdef TEST
+int compareComplex(Complex a, Complex b, double tol) {
+  return (fabs(a.real - b.real) < tol) && (fabs(a.imag - b.imag) < tol);
+}
+
+void test_fft() {
+  const double epsilon = 1e-6;
+
+  {
+    Complex input1[] = {{1, 0}, {0, 0}, {0, 0}, {0, 0}};
+    Complex expected1[] = {{1, 0}, {1, 0}, {1, 0}, {1, 0}};
+
+    fft(input1, 4);
+    for (int i = 0; i < 4; i++) {
+      assert(compareComplex(input1[i], expected1[i], epsilon));
+    }
+  }
+}
+
+int main() { test_fft(); }
+#else
+int main() {
+}
+#endif
