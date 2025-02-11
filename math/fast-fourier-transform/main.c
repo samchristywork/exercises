@@ -48,15 +48,40 @@ int compareComplex(Complex a, Complex b, double tol) {
 void test_fft() {
   const double epsilon = 1e-6;
 
+  // Test case 1: Simple impulse signal
   {
-    Complex input1[] = {{1, 0}, {0, 0}, {0, 0}, {0, 0}};
-    Complex expected1[] = {{1, 0}, {1, 0}, {1, 0}, {1, 0}};
+    Complex input[] = {{1, 0}, {0, 0}, {0, 0}, {0, 0}};
+    Complex expected[] = {{1, 0}, {1, 0}, {1, 0}, {1, 0}};
 
-    fft(input1, 4);
+    fft(input, 4);
     for (int i = 0; i < 4; i++) {
-      assert(compareComplex(input1[i], expected1[i], epsilon));
+      assert(compareComplex(input[i], expected[i], epsilon));
     }
   }
+
+  // Test case 2: Constant signal
+  {
+    Complex input[] = {{1, 0}, {1, 0}, {1, 0}, {1, 0}};
+    Complex expected[] = {{4, 0}, {0, 0}, {0, 0}, {0, 0}};
+
+    fft(input, 4);
+    for (int i = 0; i < 4; i++) {
+      assert(compareComplex(input[i], expected[i], epsilon));
+    }
+  }
+
+  // Test case 3: Different non-zero values
+  {
+    Complex input[] = {{1, 0}, {2, 0}, {3, 0}, {4, 0}};
+    Complex expected[] = {{10, 0}, {-2, 2}, {-2, 0}, {-2, -2}};
+
+    fft(input, 4);
+    for (int i = 0; i < 4; i++) {
+      assert(compareComplex(input[i], expected[i], epsilon));
+    }
+  }
+
+  printf("All tests passed!\n");
 }
 
 int main() { test_fft(); }
