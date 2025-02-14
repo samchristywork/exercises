@@ -87,5 +87,25 @@ void test_fft() {
 int main() { test_fft(); }
 #else
 int main() {
+  int n = 0;
+  int capacity = 1024;
+  Complex *X = (Complex *)malloc(capacity * sizeof(Complex));
+
+  while (1) {
+    if (n >= capacity) {
+      capacity *= 2;
+      X = (Complex *)realloc(X, capacity * sizeof(Complex));
+    }
+    if (scanf("%lf %lf", &X[n].real, &X[n].imag) != 2) {
+      break;
+    }
+    n++;
+  }
+
+  fft(X, n);
+  for (int i = 0; i < n; i++) {
+    printf("%f %f\n", X[i].real, X[i].imag);
+  }
+  free(X);
 }
 #endif
