@@ -7,7 +7,7 @@ typedef struct Item {
   int value;
 } Item;
 
-void knapsack(Item items[], int n, int capacity, int *max_value,
+Item *knapsack(Item items[], int n, int capacity, int *max_value,
                int *remaining_capacity, int *n_items) {
   // Create a 2D array to store the maximum value for each capacity
   int **dp = (int **)malloc((n + 1) * sizeof(int *));
@@ -37,9 +37,26 @@ void knapsack(Item items[], int n, int capacity, int *max_value,
   // The last cell of the table will have the answer
   int result = dp[n][capacity];
 
+  Item *selected_items = (Item *)malloc(n * sizeof(Item));
+  int count = 0;
+  int w = capacity;
+
+  for (int i = n; i > 0 && result > 0; i--) {
+    if (result != dp[i - 1][w]) {
+      // This item is included.
+      selected_items[count++] = items[i - 1];
+      // We remove this item's weight from the total weight
+      w -= items[i - 1].weight;
+      // Subtract the item's value from the result to continue tracing back
+      result -= items[i - 1].value;
+    }
+  }
+
   *max_value = dp[n][capacity];
   *remaining_capacity = w;
   *n_items = count;
+
+  return selected_items;
 }
 int main() {
 }
