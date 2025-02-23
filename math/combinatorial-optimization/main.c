@@ -79,5 +79,44 @@ Item *knapsack(Item items[], int n, int capacity, int *max_value,
 
   return selected_items;
 }
+
+#ifdef TEST
+bool testEqual(int actual, int expected) {
+  return actual == expected;
+}
+
+bool testArrayEqual(Item *actual, Item *expected, int size) {
+  for (int i = 0; i < size; i++) {
+    if (actual[i].weight != expected[i].weight ||
+        actual[i].value != expected[i].value) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+void printTest(const char *test_name, Item *actual, int actual_size,
+                Item *expected, int expected_size, int actual_max_value,
+                int expected_max_value, int actual_remaining_capacity,
+                int expected_remaining_capacity) {
+  printf("Test: %s\n", test_name);
+  printf("Actual items:\n");
+  for (int i = 0; i < actual_size; i++) {
+    printf("Item %d: Weight = %d, Value = %d\n", i + 1, actual[i].weight,
+           actual[i].value);
+  }
+  printf("Expected items:\n");
+  for (int i = 0; i < expected_size; i++) {
+    printf("Item %d: Weight = %d, Value = %d\n", i + 1, expected[i].weight,
+           expected[i].value);
+  }
+  printf("Actual max value: %d\n", actual_max_value);
+  printf("Expected max value: %d\n", expected_max_value);
+  printf("Actual remaining capacity: %d\n", actual_remaining_capacity);
+  printf("Expected remaining capacity: %d\n", expected_remaining_capacity);
+}
+
 int main() {
 }
+#endif
