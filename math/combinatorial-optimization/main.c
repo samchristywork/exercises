@@ -117,6 +117,46 @@ void printTest(const char *test_name, Item *actual, int actual_size,
   printf("Expected remaining capacity: %d\n", expected_remaining_capacity);
 }
 
+void checkTest(const char *test_name, Item *actual, int actual_size,
+                Item *expected, int expected_size, int actual_max_value,
+                int expected_max_value, int actual_remaining_capacity,
+                int expected_remaining_capacity) {
+  if (!testEqual(actual_size, expected_size) || !testEqual(actual_max_value, expected_max_value) ||
+      !testEqual(actual_remaining_capacity, expected_remaining_capacity) ||
+      !testArrayEqual(actual, expected, actual_size)) {
+    printTest(test_name, actual, actual_size, expected, expected_size,
+              actual_max_value, expected_max_value, actual_remaining_capacity,
+              expected_remaining_capacity);
+    printf("Test failed!\n");
+    exit(1);
+  } else {
+    printf("Test passed!\n");
+  }
+}
+
 int main() {
+  // Test case 1
+  {
+    int capacity = 50;
+    Item items[] = {{10, 60}, {20, 100}, {30, 120}};
+    int n = sizeof(items) / sizeof(items[0]);
+
+    Item expected_items[] = {{20, 100}, {30, 120}};
+    int expected_max_value = 220;
+    int expected_remaining_capacity = 0;
+    int expected_n_items = 2;
+
+    int max_value;
+    int remaining_capacity;
+    int n_items;
+    Item *selection = knapsack(items, n, capacity, &max_value,
+                               &remaining_capacity, &n_items);
+
+    checkTest("Test Case 1", selection, n_items, expected_items,
+                   expected_n_items, max_value, expected_max_value,
+                   remaining_capacity, expected_remaining_capacity);
+  }
+
+  printf("All test cases passed!\n");
 }
 #endif
