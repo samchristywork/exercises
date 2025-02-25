@@ -85,7 +85,19 @@ bool testEqual(int actual, int expected) {
   return actual == expected;
 }
 
+int compareItems(const void *a, const void *b) {
+  Item *itemA = (Item *)a;
+  Item *itemB = (Item *)b;
+  if (itemA->weight != itemB->weight) {
+    return itemA->weight - itemB->weight;
+  }
+  return itemA->value - itemB->value;
+}
+
 bool testArrayEqual(Item *actual, Item *expected, int size) {
+  qsort(actual, size, sizeof(Item), compareItems);
+  qsort(expected, size, sizeof(Item), compareItems);
+
   for (int i = 0; i < size; i++) {
     if (actual[i].weight != expected[i].weight ||
         actual[i].value != expected[i].value) {
