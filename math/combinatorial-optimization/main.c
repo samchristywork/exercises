@@ -171,4 +171,28 @@ int main() {
 
   printf("All test cases passed!\n");
 }
+
+#else
+int main() {
+  int capacity = 50;
+  Item items[] = {{10, 60}, {20, 100}, {20, 30}};
+  int n = sizeof(items) / sizeof(items[0]);
+
+  int max_value;
+  int remaining_capacity;
+  int n_items;
+  Item *selection = knapsack(items, n, capacity, &max_value, &remaining_capacity,
+                             &n_items);
+
+  printf("Maximum value in knapsack = %d\n", max_value);
+  printf("Remaining capacity = %d\n", remaining_capacity);
+  printf("Number of items included = %d\n", n_items);
+  printf("Items included in the knapsack:\n");
+  for (int i = 0; i < n_items; i++) {
+    printf("Item %d: Weight = %d, Value = %d\n", i + 1, selection[i].weight,
+           selection[i].value);
+  }
+
+  free(selection);
+}
 #endif
