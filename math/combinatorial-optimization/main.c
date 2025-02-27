@@ -77,6 +77,12 @@ Item *knapsack(Item items[], int n, int capacity, int *max_value,
   *remaining_capacity = w;
   *n_items = count;
 
+  // Free the allocated memory for dp table
+  for (int i = 0; i <= n; i++) {
+    free(dp[i]);
+  }
+  free(dp);
+
   return selected_items;
 }
 
@@ -167,6 +173,8 @@ int main() {
     checkTest("Test Case 1", selection, n_items, expected_items,
                    expected_n_items, max_value, expected_max_value,
                    remaining_capacity, expected_remaining_capacity);
+
+    free(selection);
   }
 
   printf("All test cases passed!\n");
