@@ -30,13 +30,8 @@ Item *knapsack(Item items[], int n, int capacity, int *max_value,
     return selected_items;
   }
 
-  // Create a 2D array to store the maximum value for each capacity
-  int **dp = (int **)malloc((n + 1) * sizeof(int *));
-  for (int i = 0; i <= n; i++) {
-    dp[i] = (int *)malloc((capacity + 1) * sizeof(int));
-  }
-
   // Build the table
+  int dp[n + 1][capacity + 1];
   for (int i = 0; i <= n; i++) {
     for (int w = 0; w <= capacity; w++) {
       if (i == 0 || w == 0) {
@@ -76,12 +71,6 @@ Item *knapsack(Item items[], int n, int capacity, int *max_value,
   *max_value = dp[n][capacity];
   *remaining_capacity = w;
   *n_items = count;
-
-  // Free the allocated memory for dp table
-  for (int i = 0; i <= n; i++) {
-    free(dp[i]);
-  }
-  free(dp);
 
   return selected_items;
 }
