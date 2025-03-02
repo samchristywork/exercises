@@ -14,6 +14,13 @@ typedef struct KnapsackSolution {
   int remaining_capacity;
 } KnapsackSolution;
 
+typedef struct SubsetSumSolution {
+  int *selected;
+  int n;
+  int value;
+  int remaining_capacity;
+} SubsetSumSolution;
+
 KnapsackSolution knapsack(Item items[], int n, int capacity) {
   if (n == 0 || capacity == 0) {
     return (KnapsackSolution){
@@ -97,6 +104,30 @@ void printKnapsackSolution(KnapsackSolution solution) {
     printf("Item %d: Weight = %d, Value = %d\n", i + 1, solution.selected[i].weight,
            solution.selected[i].value);
   }
+}
+
+SubsetSumSolution subsetSum(int set[], int n, int capacity) {
+  Item items[n];
+  for (int i = 0; i < n; i++) {
+    items[i].weight = set[i];
+    items[i].value = set[i];
+  }
+
+  KnapsackSolution knapsack_solution = knapsack(items, n, capacity);
+
+  int *selected = (int *)malloc(knapsack_solution.n * sizeof(int));
+  for (int i = 0; i < knapsack_solution.n; i++) {
+    selected[i] = knapsack_solution.selected[i].weight;
+  }
+
+  free(knapsack_solution.selected);
+
+  return (SubsetSumSolution){
+    .selected = selected,
+    .n = knapsack_solution.n,
+    .value = knapsack_solution.value,
+    .remaining_capacity = knapsack_solution.remaining_capacity
+  };
 }
 
 #ifdef TEST
