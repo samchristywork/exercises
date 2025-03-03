@@ -130,6 +130,16 @@ SubsetSumSolution subsetSum(int set[], int n, int capacity) {
   };
 }
 
+void printSubsetSumSolution(SubsetSumSolution solution) {
+  printf("Maximum value in subset sum = %d\n", solution.value);
+  printf("Remaining capacity = %d\n", solution.remaining_capacity);
+  printf("Number of items included = %d\n", solution.n);
+  printf("Items included in the subset sum:\n");
+  for (int i = 0; i < solution.n; i++) {
+    printf("Item %d: Weight = %d\n", i + 1, solution.selected[i]);
+  }
+}
+
 #ifdef TEST
 bool testEqual(int actual, int expected) {
   return actual == expected;
@@ -144,7 +154,11 @@ int compareItems(const void *a, const void *b) {
   return itemA->value - itemB->value;
 }
 
-bool testArrayEqual(Item *actual, Item *expected, int size) {
+int compareInts(const void *a, const void *b) {
+  return (*(int *)a - *(int *)b);
+}
+
+bool testItemArrayEqual(Item *actual, Item *expected, int size) {
   qsort(actual, size, sizeof(Item), compareItems);
   qsort(expected, size, sizeof(Item), compareItems);
 
@@ -158,41 +172,39 @@ bool testArrayEqual(Item *actual, Item *expected, int size) {
   return true;
 }
 
-void printTest(const char *test_name, Item *actual, int actual_size,
-                Item *expected, int expected_size, int actual_max_value,
-                int expected_max_value, int actual_remaining_capacity,
-                int expected_remaining_capacity) {
-  printf("Test: %s\n", test_name);
-  printf("Actual items:\n");
-  for (int i = 0; i < actual_size; i++) {
-    printf("Item %d: Weight = %d, Value = %d\n", i + 1, actual[i].weight,
-           actual[i].value);
+bool testIntArrayEqual(int *actual, int *expected, int size) {
+  qsort(actual, size, sizeof(int), compareInts);
+  qsort(expected, size, sizeof(int), compareInts);
+
+  for (int i = 0; i < size; i++) {
+    if (actual[i] != expected[i]) {
+      return false;
+    }
   }
-  printf("Expected items:\n");
-  for (int i = 0; i < expected_size; i++) {
-    printf("Item %d: Weight = %d, Value = %d\n", i + 1, expected[i].weight,
-           expected[i].value);
-  }
-  printf("Actual max value: %d\n", actual_max_value);
-  printf("Expected max value: %d\n", expected_max_value);
-  printf("Actual remaining capacity: %d\n", actual_remaining_capacity);
-  printf("Expected remaining capacity: %d\n", expected_remaining_capacity);
+
+  return true;
 }
 
-void checkTest(const char *test_name, Item *actual, int actual_size,
-                Item *expected, int expected_size, int actual_max_value,
-                int expected_max_value, int actual_remaining_capacity,
-                int expected_remaining_capacity) {
-  if (!testEqual(actual_size, expected_size) || !testEqual(actual_max_value, expected_max_value) ||
-      !testEqual(actual_remaining_capacity, expected_remaining_capacity) ||
-      !testArrayEqual(actual, expected, actual_size)) {
-    printTest(test_name, actual, actual_size, expected, expected_size,
-              actual_max_value, expected_max_value, actual_remaining_capacity,
-              expected_remaining_capacity);
+bool testSubsetSumSolutionEqual(SubsetSumSolution actual, SubsetSumSolution expected) {
+  if (!testEqual(actual.value, expected.value) ||
+      !testEqual(actual.remaining_capacity, expected.remaining_capacity) ||
+      !testEqual(actual.n, expected.n)) {
+    return false;
+  }
+  return testIntArrayEqual(actual.selected, expected.selected, actual.n);
+}
+
+void checkSubsetSumSolution(SubsetSumSolution actual, SubsetSumSolution expected) {
+  if (!testSubsetSumSolutionEqual(actual, expected)) {
     printf("Test failed!\n");
+    printf("\n");
+    printf("Actual:\n");
+    printSubsetSumSolution(actual);
+    printf("\n");
+    printf("Expected:\n");
+    printSubsetSumSolution(expected);
+
     exit(1);
-  } else {
-    printf("Test passed!\n");
   }
 }
 
