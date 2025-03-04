@@ -185,6 +185,16 @@ bool testIntArrayEqual(int *actual, int *expected, int size) {
   return true;
 }
 
+bool testKnapsackSolutionEqual(KnapsackSolution actual, KnapsackSolution expected) {
+  if (!testEqual(actual.value, expected.value) ||
+      !testEqual(actual.remaining_capacity, expected.remaining_capacity) ||
+      !testEqual(actual.n, expected.n)) {
+    return false;
+  }
+
+  return testItemArrayEqual(actual.selected, expected.selected, actual.n);
+}
+
 bool testSubsetSumSolutionEqual(SubsetSumSolution actual, SubsetSumSolution expected) {
   if (!testEqual(actual.value, expected.value) ||
       !testEqual(actual.remaining_capacity, expected.remaining_capacity) ||
@@ -192,6 +202,20 @@ bool testSubsetSumSolutionEqual(SubsetSumSolution actual, SubsetSumSolution expe
     return false;
   }
   return testIntArrayEqual(actual.selected, expected.selected, actual.n);
+}
+
+void checkKnapsackSolution(KnapsackSolution actual, KnapsackSolution expected) {
+  if (!testKnapsackSolutionEqual(actual, expected)) {
+    printf("Test failed!\n");
+    printf("\n");
+    printf("Actual:\n");
+    printKnapsackSolution(actual);
+    printf("\n");
+    printf("Expected:\n");
+    printKnapsackSolution(expected);
+
+    exit(1);
+  }
 }
 
 void checkSubsetSumSolution(SubsetSumSolution actual, SubsetSumSolution expected) {
