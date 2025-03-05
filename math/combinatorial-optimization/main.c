@@ -236,25 +236,58 @@ int main() {
   // Test case 1
   {
     int capacity = 50;
-    Item items[] = {{10, 60}, {20, 100}, {30, 120}};
+    Item items[] = {{10, 60}, {20, 100}, {30, 30}};
     int n = sizeof(items) / sizeof(items[0]);
 
-    Item expected_items[] = {{20, 100}, {30, 120}};
-    int expected_max_value = 220;
-    int expected_remaining_capacity = 0;
-    int expected_n_items = 2;
+    KnapsackSolution expected = {
+      .selected = (Item[]){items[0], items[1]},
+      .n = 2,
+      .value = 160,
+      .remaining_capacity = 20
+    };
 
-    int max_value;
-    int remaining_capacity;
-    int n_items;
-    Item *selection = knapsack(items, n, capacity, &max_value,
-                               &remaining_capacity, &n_items);
+    KnapsackSolution solution = knapsack(items, n, capacity);
+    checkKnapsackSolution(solution, expected);
 
-    checkTest("Test Case 1", selection, n_items, expected_items,
-                   expected_n_items, max_value, expected_max_value,
-                   remaining_capacity, expected_remaining_capacity);
+    free(solution.selected);
+  }
 
-    free(selection);
+  // Test case 2
+  {
+    int capacity = 0;
+    Item items[] = {{10, 60}, {20, 100}, {30, 30}};
+    int n = sizeof(items) / sizeof(items[0]);
+
+    KnapsackSolution expected = {
+      .selected = (Item[]){},
+      .n = 0,
+      .value = 0,
+      .remaining_capacity = 0
+    };
+
+    KnapsackSolution solution = knapsack(items, n, capacity);
+    checkKnapsackSolution(solution, expected);
+
+    free(solution.selected);
+  }
+
+  // Test case 3
+  {
+    int capacity = 50;
+    Item items[] = {};
+    int n = sizeof(items) / sizeof(items[0]);
+
+    KnapsackSolution expected = {
+      .selected = (Item[]){},
+      .n = 0,
+      .value = 0,
+      .remaining_capacity = 50
+    };
+
+    KnapsackSolution solution = knapsack(items, n, capacity);
+    checkKnapsackSolution(solution, expected);
+
+    free(solution.selected);
   }
 
   printf("All test cases passed!\n");
