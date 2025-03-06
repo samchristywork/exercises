@@ -290,6 +290,63 @@ int main() {
     free(solution.selected);
   }
 
+  // Test case 4
+  {
+    int capacity = 50;
+    Item items[] = {{60, 100}, {100, 200}, {120, 300}};
+    int n = sizeof(items) / sizeof(items[0]);
+
+    KnapsackSolution expected = {
+      .selected = (Item[]){},
+      .n = 0,
+      .value = 0,
+      .remaining_capacity = 50
+    };
+
+    KnapsackSolution solution = knapsack(items, n, capacity);
+    checkKnapsackSolution(solution, expected);
+
+    free(solution.selected);
+  }
+
+  // Test case 5
+  {
+    int capacity = 50;
+    Item items[] = {{10, 60}, {20, 100}, {30, 120}};
+    int n = sizeof(items) / sizeof(items[0]);
+
+    KnapsackSolution expected = {
+      .selected = (Item[]){items[1], items[2]},
+      .n = 2,
+      .value = 220,
+      .remaining_capacity = 0
+    };
+
+    KnapsackSolution solution = knapsack(items, n, capacity);
+    checkKnapsackSolution(solution, expected);
+
+    free(solution.selected);
+  }
+
+  // Test case 6
+  {
+    int capacity = 9;
+    int set[] = {1, 2, 3, 4, 5};
+    int n = sizeof(set) / sizeof(set[0]);
+
+    SubsetSumSolution expected = {
+      .selected = (int[]){set[1], set[2], set[3]},
+      .n = 3,
+      .value = 9,
+      .remaining_capacity = 0
+    };
+
+    SubsetSumSolution solution = subsetSum(set, n, capacity);
+    checkSubsetSumSolution(solution, expected);
+
+    free(solution.selected);
+  }
+
   printf("All test cases passed!\n");
 }
 
