@@ -351,13 +351,42 @@ int main() {
 }
 
 #else
-int main() {
-  int capacity = 50;
-  Item items[] = {{10, 60}, {20, 100}, {20, 30}};
-  int n = sizeof(items) / sizeof(items[0]);
+int main(int argc, char *argv[]) {
+  if (argc != 2) {
+    printf("Usage: %s <capacity>\n", argv[0]);
+    return 1;
+  }
+
+  int n=0;
+  int capacity = atoi(argv[1]);
+
+  int items_size = 100;
+  Item *items = malloc(items_size * sizeof(Item));
+
+  while (true) {
+    Item item;
+    int r = scanf("%d %d", &item.weight, &item.value);
+    if (r == EOF) {
+      break;
+    }
+
+    if (r != 2) {
+      fprintf(stderr, "Invalid input format\n");
+      free(items);
+      return 1;
+    }
+
+    if (n >= items_size) {
+      items_size *= 2;
+      items = realloc(items, items_size * sizeof(Item));
+    }
+
+    items[n++] = item;
+  }
 
   KnapsackSolution solution = knapsack(items, n, capacity);
   printKnapsackSolution(solution);
+
   free(solution.selected);
 }
 #endif
