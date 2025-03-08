@@ -1,6 +1,6 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
 typedef struct Item {
   int weight;
@@ -24,29 +24,26 @@ typedef struct SubsetSumSolution {
 KnapsackSolution knapsack(Item items[], int n, int capacity) {
   if (n == 0 || capacity == 0) {
     return (KnapsackSolution){
-      .selected = NULL,
-      .n = 0,
-      .value = 0,
-      .remaining_capacity = capacity
-    };
+        .selected = NULL, .n = 0, .value = 0, .remaining_capacity = capacity};
   }
 
-  if (n==1) {
+  if (n == 1) {
     Item *selected_items = (Item *)malloc(1 * sizeof(Item));
+    Item *selected_item = &selected_items[0];
+    Item item = items[0];
 
-    if (items[0].weight <= capacity) {
-      selected_items[0] = items[0];
+    if (item.weight <= capacity) {
+      selected_items[0] = item;
     } else {
-      selected_items[0].weight = 0;
-      selected_items[0].value = 0;
+      selected_item->weight = 0;
+      selected_item->value = 0;
     }
 
-    return (KnapsackSolution){
-      .selected = selected_items,
-      .n = 1,
-      .value = selected_items[0].value,
-      .remaining_capacity = capacity - selected_items[0].weight
-    };
+    return (KnapsackSolution){.selected = selected_items,
+                              .n = 1,
+                              .value = selected_item->value,
+                              .remaining_capacity =
+                                  capacity - selected_item->weight};
   }
 
   // Build the table
@@ -87,12 +84,10 @@ KnapsackSolution knapsack(Item items[], int n, int capacity) {
     }
   }
 
-  return (KnapsackSolution){
-    .selected = selected_items,
-    .n = count,
-    .value = dp[n][capacity],
-    .remaining_capacity = w
-  };
+  return (KnapsackSolution){.selected = selected_items,
+                            .n = count,
+                            .value = dp[n][capacity],
+                            .remaining_capacity = w};
 }
 
 void printKnapsackSolution(KnapsackSolution solution) {
@@ -101,8 +96,8 @@ void printKnapsackSolution(KnapsackSolution solution) {
   printf("Number of items included = %d\n", solution.n);
   printf("Items included in the knapsack:\n");
   for (int i = 0; i < solution.n; i++) {
-    printf("Item %d: Weight = %d, Value = %d\n", i + 1, solution.selected[i].weight,
-           solution.selected[i].value);
+    printf("Item %d: Weight = %d, Value = %d\n", i + 1,
+           solution.selected[i].weight, solution.selected[i].value);
   }
 }
 
@@ -122,12 +117,11 @@ SubsetSumSolution subsetSum(int set[], int n, int capacity) {
 
   free(knapsack_solution.selected);
 
-  return (SubsetSumSolution){
-    .selected = selected,
-    .n = knapsack_solution.n,
-    .value = knapsack_solution.value,
-    .remaining_capacity = knapsack_solution.remaining_capacity
-  };
+  return (SubsetSumSolution){.selected = selected,
+                             .n = knapsack_solution.n,
+                             .value = knapsack_solution.value,
+                             .remaining_capacity =
+                                 knapsack_solution.remaining_capacity};
 }
 
 void printSubsetSumSolution(SubsetSumSolution solution) {
@@ -141,9 +135,7 @@ void printSubsetSumSolution(SubsetSumSolution solution) {
 }
 
 #ifdef TEST
-bool testEqual(int actual, int expected) {
-  return actual == expected;
-}
+bool testEqual(int actual, int expected) { return actual == expected; }
 
 int compareItems(const void *a, const void *b) {
   Item *itemA = (Item *)a;
@@ -185,7 +177,8 @@ bool testIntArrayEqual(int *actual, int *expected, int size) {
   return true;
 }
 
-bool testKnapsackSolutionEqual(KnapsackSolution actual, KnapsackSolution expected) {
+bool testKnapsackSolutionEqual(KnapsackSolution actual,
+                               KnapsackSolution expected) {
   if (!testEqual(actual.value, expected.value) ||
       !testEqual(actual.remaining_capacity, expected.remaining_capacity) ||
       !testEqual(actual.n, expected.n)) {
@@ -195,7 +188,8 @@ bool testKnapsackSolutionEqual(KnapsackSolution actual, KnapsackSolution expecte
   return testItemArrayEqual(actual.selected, expected.selected, actual.n);
 }
 
-bool testSubsetSumSolutionEqual(SubsetSumSolution actual, SubsetSumSolution expected) {
+bool testSubsetSumSolutionEqual(SubsetSumSolution actual,
+                                SubsetSumSolution expected) {
   if (!testEqual(actual.value, expected.value) ||
       !testEqual(actual.remaining_capacity, expected.remaining_capacity) ||
       !testEqual(actual.n, expected.n)) {
@@ -218,7 +212,8 @@ void checkKnapsackSolution(KnapsackSolution actual, KnapsackSolution expected) {
   }
 }
 
-void checkSubsetSumSolution(SubsetSumSolution actual, SubsetSumSolution expected) {
+void checkSubsetSumSolution(SubsetSumSolution actual,
+                            SubsetSumSolution expected) {
   if (!testSubsetSumSolutionEqual(actual, expected)) {
     printf("Test failed!\n");
     printf("\n");
@@ -239,12 +234,10 @@ int main() {
     Item items[] = {{10, 60}, {20, 100}, {30, 30}};
     int n = sizeof(items) / sizeof(items[0]);
 
-    KnapsackSolution expected = {
-      .selected = (Item[]){items[0], items[1]},
-      .n = 2,
-      .value = 160,
-      .remaining_capacity = 20
-    };
+    KnapsackSolution expected = {.selected = (Item[]){items[0], items[1]},
+                                 .n = 2,
+                                 .value = 160,
+                                 .remaining_capacity = 20};
 
     KnapsackSolution solution = knapsack(items, n, capacity);
     checkKnapsackSolution(solution, expected);
@@ -259,11 +252,7 @@ int main() {
     int n = sizeof(items) / sizeof(items[0]);
 
     KnapsackSolution expected = {
-      .selected = (Item[]){},
-      .n = 0,
-      .value = 0,
-      .remaining_capacity = 0
-    };
+        .selected = (Item[]){}, .n = 0, .value = 0, .remaining_capacity = 0};
 
     KnapsackSolution solution = knapsack(items, n, capacity);
     checkKnapsackSolution(solution, expected);
@@ -278,11 +267,7 @@ int main() {
     int n = sizeof(items) / sizeof(items[0]);
 
     KnapsackSolution expected = {
-      .selected = (Item[]){},
-      .n = 0,
-      .value = 0,
-      .remaining_capacity = 50
-    };
+        .selected = (Item[]){}, .n = 0, .value = 0, .remaining_capacity = 50};
 
     KnapsackSolution solution = knapsack(items, n, capacity);
     checkKnapsackSolution(solution, expected);
@@ -297,11 +282,7 @@ int main() {
     int n = sizeof(items) / sizeof(items[0]);
 
     KnapsackSolution expected = {
-      .selected = (Item[]){},
-      .n = 0,
-      .value = 0,
-      .remaining_capacity = 50
-    };
+        .selected = (Item[]){}, .n = 0, .value = 0, .remaining_capacity = 50};
 
     KnapsackSolution solution = knapsack(items, n, capacity);
     checkKnapsackSolution(solution, expected);
@@ -315,12 +296,10 @@ int main() {
     Item items[] = {{10, 60}, {20, 100}, {30, 120}};
     int n = sizeof(items) / sizeof(items[0]);
 
-    KnapsackSolution expected = {
-      .selected = (Item[]){items[1], items[2]},
-      .n = 2,
-      .value = 220,
-      .remaining_capacity = 0
-    };
+    KnapsackSolution expected = {.selected = (Item[]){items[1], items[2]},
+                                 .n = 2,
+                                 .value = 220,
+                                 .remaining_capacity = 0};
 
     KnapsackSolution solution = knapsack(items, n, capacity);
     checkKnapsackSolution(solution, expected);
@@ -334,12 +313,10 @@ int main() {
     int set[] = {1, 2, 3, 4, 5};
     int n = sizeof(set) / sizeof(set[0]);
 
-    SubsetSumSolution expected = {
-      .selected = (int[]){set[1], set[2], set[3]},
-      .n = 3,
-      .value = 9,
-      .remaining_capacity = 0
-    };
+    SubsetSumSolution expected = {.selected = (int[]){set[1], set[2], set[3]},
+                                  .n = 3,
+                                  .value = 9,
+                                  .remaining_capacity = 0};
 
     SubsetSumSolution solution = subsetSum(set, n, capacity);
     checkSubsetSumSolution(solution, expected);
@@ -357,7 +334,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  int n=0;
+  int n = 0;
   int capacity = atoi(argv[1]);
 
   int items_size = 100;
