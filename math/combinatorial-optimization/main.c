@@ -328,6 +328,16 @@ int main() {
 }
 
 #else
+void usage(char *name) {
+  printf("Usage: %s [options]\n", name);
+  printf("\n");
+  printf("Options:\n");
+  printf("  -h, --help                 Show this help message\n");
+  printf("  -c, --capacity <capacity>  Set the capacity of the knapsack\n");
+  printf("  -s, --subset-sum           Solve the subset sum problem\n");
+  printf("\n");
+}
+
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     printf("Usage: %s <capacity>\n", argv[0]);
