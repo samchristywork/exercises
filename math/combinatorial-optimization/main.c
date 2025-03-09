@@ -339,9 +339,31 @@ void usage(char *name) {
 }
 
 int main(int argc, char *argv[]) {
-  if (argc != 2) {
-    printf("Usage: %s <capacity>\n", argv[0]);
-    return 1;
+  int capacity = 0;
+  bool subsetSumFlag = false;
+
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+      usage(argv[0]);
+      return 0;
+    } else if (strcmp(argv[i], "-c") == 0 ||
+               strcmp(argv[i], "--capacity") == 0) {
+      if (i + 1 < argc) {
+        capacity = atoi(argv[++i]);
+      } else {
+        fprintf(stderr, "Error: Missing capacity value\n");
+        return 1;
+      }
+    } else if (strcmp(argv[i], "-s") == 0 ||
+               strcmp(argv[i], "--subset-sum") == 0) {
+      subsetSumFlag = true;
+    } else if (strcmp(argv[i], "-k") == 0 ||
+               strcmp(argv[i], "--knapsack") == 0) {
+      subsetSumFlag = false;
+    } else {
+      fprintf(stderr, "Error: Unknown option '%s'\n", argv[i]);
+      return 1;
+    }
   }
 
   int n = 0;
