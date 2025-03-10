@@ -366,36 +366,67 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  int n = 0;
-  int capacity = atoi(argv[1]);
+  if (subsetSumFlag) {
+    int n = 0;
+    int items_size = 100;
+    int *items = malloc(items_size * sizeof(int));
 
-  int items_size = 100;
-  Item *items = malloc(items_size * sizeof(Item));
+    while (true) {
+      int item;
+      int r = scanf("%d", &item);
+      if (r == EOF) {
+        break;
+      }
 
-  while (true) {
-    Item item;
-    int r = scanf("%d %d", &item.weight, &item.value);
-    if (r == EOF) {
-      break;
+      if (r != 1) {
+        fprintf(stderr, "Invalid input format\n");
+        free(items);
+        return 1;
+      }
+
+      if (n >= items_size) {
+        items_size *= 2;
+        items = realloc(items, items_size * sizeof(int));
+      }
+
+      items[n++] = item;
     }
 
-    if (r != 2) {
-      fprintf(stderr, "Invalid input format\n");
-      free(items);
-      return 1;
+    SubsetSumSolution solution = subsetSum(items, n, capacity);
+    printSubsetSumSolution(solution);
+
+    free(solution.selected);
+  } else {
+    int n = 0;
+
+    int items_size = 100;
+    Item *items = malloc(items_size * sizeof(Item));
+
+    while (true) {
+      Item item;
+      int r = scanf("%d %d", &item.weight, &item.value);
+      if (r == EOF) {
+        break;
+      }
+
+      if (r != 2) {
+        fprintf(stderr, "Invalid input format\n");
+        free(items);
+        return 1;
+      }
+
+      if (n >= items_size) {
+        items_size *= 2;
+        items = realloc(items, items_size * sizeof(Item));
+      }
+
+      items[n++] = item;
     }
 
-    if (n >= items_size) {
-      items_size *= 2;
-      items = realloc(items, items_size * sizeof(Item));
-    }
+    KnapsackSolution solution = knapsack(items, n, capacity);
+    printKnapsackSolution(solution);
 
-    items[n++] = item;
+    free(solution.selected);
   }
-
-  KnapsackSolution solution = knapsack(items, n, capacity);
-  printKnapsackSolution(solution);
-
-  free(solution.selected);
 }
 #endif
