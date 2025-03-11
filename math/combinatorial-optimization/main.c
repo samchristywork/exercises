@@ -335,6 +335,11 @@ void usage(char *name) {
   printf("  -h, --help                 Show this help message\n");
   printf("  -c, --capacity <capacity>  Set the capacity of the knapsack\n");
   printf("  -s, --subset-sum           Solve the subset sum problem\n");
+  printf("  -k, --knapsack             Solve the knapsack problem (default)\n");
+  printf("\n");
+  printf("Input line format:\n");
+  printf("  For subset sum: <item_weight>\n");
+  printf("  For knapsack: <item_weight> <item_value>\n");
   printf("\n");
 }
 
