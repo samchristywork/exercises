@@ -94,5 +94,32 @@ impl Worker {
     }
 }
 
+fn handle_hello(_request: &str) -> (String, String, String) {
+    ("Hello, World!".to_string(), "200 OK".to_string(), "text/plain".to_string())
+}
+
+fn handle_goodbye(_request: &str) -> (String, String, String) {
+    ("Bye!".to_string(), "200 OK".to_string(), "text/plain".to_string())
+}
+
+fn handle_echo_request(request: &str) -> (String, String, String) {
+    let lines: Vec<&str> = request.lines().collect();
+    let mut response = "<!doctype html><html><body><h1>Request</h1><pre>".to_string();
+    for line in lines {
+        response.push_str("<div>");
+        response.push_str(line);
+        response.push_str("</div>");
+    }
+    response.push_str("</pre></body></html>");
+
+    (response, "200 OK".to_string(), "text/html".to_string())
+}
+
+fn handle_index(_request: &str) -> (String, String, String) {
+    let bytes = include_bytes!("../index.html");
+    let content = String::from_utf8_lossy(bytes);
+    (content.to_string(), "200 OK".to_string(), "text/html".to_string())
+}
+
 fn main() {
 }
