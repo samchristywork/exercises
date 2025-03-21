@@ -1,5 +1,8 @@
+use std::io::Result;
 use std::io::prelude::*;
+use std::net::{TcpListener, TcpStream};
 use std::thread;
+use std::time::Duration;
 use std::sync::{Arc, Mutex, mpsc};
 
 struct ThreadPool {
@@ -119,6 +122,38 @@ fn handle_index(_request: &str) -> (String, String, String) {
     let bytes = include_bytes!("../index.html");
     let content = String::from_utf8_lossy(bytes);
     (content.to_string(), "200 OK".to_string(), "text/html".to_string())
+}
+
+fn handle_connection(mut stream: TcpStream, timeout: u64) -> Result<()> {
+    stream.set_read_timeout(Some(Duration::new(timeout, 0)))?;
+
+    let mut buffer = [0; 8192];
+    match stream.read(&mut buffer) {
+        Ok(_) => {
+            println!("Request: {}", String::from_utf8_lossy(&buffer[..]));
+
+            let (response, status, content_type) = match String::from_utf8_lossy(&buffer[..]).as_ref() {
+                s if s.starts_with("GET /hello") => handle_hello(s),
+                s if s.starts_with("GET /goodbye") => handle_goodbye(s),
+                s if s.starts_with("GET /echo-request") => handle_echo_request(s),
+                s if s.starts_with("GET /") => handle_index(s),
+                _ => ("Unknown request".to_string(), "404 Not Found".to_string(), "text/plain".to_string()),
+            };
+
+            let content_length = response.len();
+            let response = format!(
+                "HTTP/1.1 {}\r\nContent-Length: {}\r\nContent-Type: {}\r\n\r\n{}",
+                 status, content_length, content_type, response
+            );
+            stream.write_all(response.as_bytes())?;
+            stream.flush()?;
+        }
+        Err(e) => {
+            eprintln!("Failed to read from stream: {}", e);
+        }
+    }
+
+    Ok(())
 }
 
 fn main() {
