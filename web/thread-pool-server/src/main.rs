@@ -1,6 +1,7 @@
 use std::io::Result;
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::Duration;
 use std::sync::{Arc, Mutex, mpsc};
@@ -157,4 +158,36 @@ fn handle_connection(mut stream: TcpStream, timeout: u64) -> Result<()> {
 }
 
 fn main() {
+    let max_connections = 100;
+    let n_workers = 4;
+    let timeout = 5;
+    let hostname = "127.0.0.1";
+    let port = 7878;
+
+    let listener = TcpListener::bind(format!("{}:{}", hostname, port)).expect("Could not bind");
+    println!("Listening on http://{}:{}", hostname, port);
+
+    let active_connections = Arc::new(AtomicUsize::new(0));
+    let pool = ThreadPool::new(n_workers);
+
+    for stream in listener.incoming() {
+        let stream = stream.expect("Failed to accept connection");
+
+        if active_connections.load(Ordering::SeqCst) >= max_connections {
+            eprintln!("Server overload: Too many connections");
+            drop(stream);
+            continue;
+        }
+
+        let active_connections = Arc::clone(&active_connections);
+        active_connections.fetch_add(1, Ordering::SeqCst);
+
+        pool.execute(move || {
+            if let Err(e) = handle_connection(stream, timeout) {
+                eprintln!("Error handling connection: {}", e);
+            }
+
+            active_connections.fetch_sub(1, Ordering::SeqCst);
+        });
+    }
 }
