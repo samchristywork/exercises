@@ -1,0 +1,66 @@
+use crate::Environment;
+use crate::Node;
+use crate::Range;
+use crate::Token;
+use crate::TokenKind;
+
+fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node {
+    match function.token.kind {
+        TokenKind::Symbol => match function.token.value.as_str() {
+            "+" => {
+                let args = args
+                    .iter()
+                    .map(|arg| evaluate_node(arg, env))
+                    .collect::<Vec<_>>();
+
+                let mut sum = 0;
+                for arg in args {
+                    if let Ok(num) = arg.token.value.parse::<i32>() {
+                        sum += num;
+                    } else {
+                        panic!("Invalid argument for add: {}", arg.token.value);
+                    }
+                }
+                Node {
+                    token: Token {
+                        value: sum.to_string(),
+                        kind: TokenKind::Number,
+                        range: Range { start: 0, end: 0 },
+                    },
+                    children: Vec::new(),
+                }
+            }
+            _ => env.get(&function.token.value).map_or_else(
+                || panic!("Unknown function: {}", function.token.value),
+                std::clone::Clone::clone,
+            ),
+        },
+        TokenKind::LParen => {
+            apply_function(&function.children[0].clone(), &function.children[1..], env)
+        }
+        _ => panic!("Invalid function application"),
+    }
+}
+
+pub fn evaluate_node(node: &Node, env: &mut Environment) -> Node {
+    match node.token.kind {
+        TokenKind::Module => {
+            for child in &node.children {
+                evaluate_node(child, env);
+            }
+
+            Node {
+                token: node.token.clone(),
+                children: Vec::new(),
+            }
+        }
+        TokenKind::LParen => {
+            let function = evaluate_node(&node.children[0], env);
+            apply_function(&function, &node.children[1..], env)
+        }
+        TokenKind::Symbol => env
+            .get(&node.token.value)
+            .map_or_else(|| node.clone(), std::clone::Clone::clone),
+        _ => node.clone(),
+    }
+}
