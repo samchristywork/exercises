@@ -30,6 +30,39 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
                     children: Vec::new(),
                 }
             }
+            "print" => {
+                let args = args
+                    .iter()
+                    .map(|arg| evaluate_node(arg, env))
+                    .collect::<Vec<_>>();
+
+                for arg in args {
+                    println!("{}", arg.token.value);
+                }
+
+                Node {
+                    token: Token {
+                        value: String::from("print"),
+                        kind: TokenKind::Symbol,
+                        range: Range { start: 0, end: 0 },
+                    },
+                    children: Vec::new(),
+                }
+            }
+            "printenv" => {
+                for (key, value) in &env.variables {
+                    println!("{}: {}", key, value);
+                }
+
+                Node {
+                    token: Token {
+                        value: String::from("printenv"),
+                        kind: TokenKind::Symbol,
+                        range: Range { start: 0, end: 0 },
+                    },
+                    children: Vec::new(),
+                }
+            }
             _ => env.get(&function.token.value).map_or_else(
                 || panic!("Unknown function: {}", function.token.value),
                 std::clone::Clone::clone,
