@@ -30,6 +30,26 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
                     children: Vec::new(),
                 }
             }
+            "repeat" => {
+                let n = evaluate_node(&args[0], env);
+                for _ in 0..n.token.value.parse::<i32>().expect("Invalid number") {
+                    for arg in &args[1..] {
+                        evaluate_node(arg, env);
+                    }
+                }
+
+                Node {
+                    token: Token {
+                        value: String::from("repeat"),
+                        kind: TokenKind::Symbol,
+                        range: Range { start: 0, end: 0 },
+                    },
+                    children: Vec::new(),
+                }
+            }
+            "loop" => loop {
+                evaluate_node(&args[0], env);
+            },
             "print" => {
                 let args = args
                     .iter()
