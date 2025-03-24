@@ -49,6 +49,22 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
                     children: Vec::new(),
                 }
             }
+            "true" => Node {
+                token: Token {
+                    value: String::from("true"),
+                    kind: TokenKind::Symbol,
+                    range: Range { start: 0, end: 0 },
+                },
+                children: Vec::new(),
+            },
+            "false" => Node {
+                token: Token {
+                    value: String::from("false"),
+                    kind: TokenKind::Symbol,
+                    range: Range { start: 0, end: 0 },
+                },
+                children: Vec::new(),
+            },
             "printenv" => {
                 for (key, value) in &env.variables {
                     println!("{}: {}", key, value);
