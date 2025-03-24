@@ -85,6 +85,32 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
                 },
                 children: Vec::new(),
             },
+            "equal" => {
+                let args = args
+                    .iter()
+                    .map(|arg| evaluate_node(arg, env))
+                    .collect::<Vec<_>>();
+
+                assert!(
+                    args.len() == 2,
+                    "equal function requires exactly 2 arguments"
+                );
+
+                let result = if args[0].token.value == args[1].token.value {
+                    "true"
+                } else {
+                    "false"
+                };
+
+                Node {
+                    token: Token {
+                        value: String::from(result),
+                        kind: TokenKind::Symbol,
+                        range: Range { start: 0, end: 0 },
+                    },
+                    children: Vec::new(),
+                }
+            }
             "printenv" => {
                 for (key, value) in &env.variables {
                     println!("{}: {}", key, value);
