@@ -111,6 +111,36 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
                     children: Vec::new(),
                 }
             }
+            "def" => {
+                let name = &args[0].token.value;
+                let value = evaluate_node(&args[1], env);
+                env.set(name.clone(), value);
+
+                Node {
+                    token: Token {
+                        value: String::from("def"),
+                        kind: TokenKind::Symbol,
+                        range: Range { start: 0, end: 0 },
+                    },
+                    children: Vec::new(),
+                }
+            }
+            "defun" => {
+                let name = &args[0].token.value;
+                let params = args[1].clone();
+                let body = args[2].clone();
+
+                env.set(name.clone(), body);
+
+                Node {
+                    token: Token {
+                        value: String::from("defun"),
+                        kind: TokenKind::Symbol,
+                        range: Range { start: 0, end: 0 },
+                    },
+                    children: Vec::new(),
+                }
+            }
             "printenv" => {
                 for (key, value) in &env.variables {
                     println!("{}: {}", key, value);
