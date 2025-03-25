@@ -25,6 +25,45 @@ fn fn_add(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
+fn fn_sub(args: &[Node], env: &mut Environment) -> Node {
+    let mut remaining_args = evaluate_args!(args, env);
+    let first_arg = remaining_args
+        .remove(0)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+
+    Node {
+        token: Token {
+            value: remaining_args
+                .into_iter()
+                .fold(first_arg, |acc, x| {
+                    acc - x.token.value.parse::<i32>().expect("Invalid number")
+                })
+                .to_string(),
+            kind: TokenKind::Number,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
+fn fn_mul(args: &[Node], env: &mut Environment) -> Node {
+    Node {
+        token: Token {
+            value: evaluate_args!(args, env)
+                .iter()
+                .map(|arg| arg.token.value.parse::<i32>().expect("Invalid number"))
+                .product::<i32>()
+                .to_string(),
+            kind: TokenKind::Number,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
 fn fn_repeat(args: &[Node], env: &mut Environment) -> Node {
     (0..evaluate_node(&args[0], env)
         .token
