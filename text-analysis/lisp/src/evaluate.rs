@@ -201,6 +201,22 @@ fn fn_defun(args: &[Node], env: &mut Environment) -> Node {
     fn_true()
 }
 
+fn fn_read_line() -> Node {
+    let mut input = String::new();
+    std::io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
+
+    Node {
+        token: Token {
+            value: input.trim().to_string(),
+            kind: TokenKind::Text,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
 fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node {
     match function.token.kind {
         TokenKind::Symbol => match function.token.value.as_str() {
@@ -221,6 +237,7 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
             ">" => fn_greater_than(args, env),
             "def" => fn_def(args, env),
             "defun" => fn_defun(args, env),
+            "read-line" => fn_read_line(),
             _ => env.get(&function.token.value).map_or_else(
                 || panic!("Unknown function: {}", function.token.value),
                 std::clone::Clone::clone,
