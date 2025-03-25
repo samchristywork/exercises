@@ -4,227 +4,163 @@ use crate::Range;
 use crate::Token;
 use crate::TokenKind;
 
+fn evaluate_args(args: &[Node], env: &mut Environment) -> Vec<Node> {
+    args.iter()
+        .map(|arg| evaluate_node(arg, env))
+        .collect::<Vec<_>>()
+}
+
+fn fn_add(args: &[Node], env: &mut Environment) -> Node {
+    Node {
+        token: Token {
+            value: evaluate_args(args, env)
+                .iter()
+                .map(|arg| arg.token.value.parse::<i32>().expect("Invalid number"))
+                .sum::<i32>()
+                .to_string(),
+            kind: TokenKind::Number,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
+fn fn_repeat(args: &[Node], env: &mut Environment) -> Node {
+    (0..evaluate_node(&args[0], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number"))
+        .for_each(|_| {
+            evaluate_node(&args[1], env);
+        });
+
+    fn_true()
+}
+
+fn fn_loop(args: &[Node], env: &mut Environment) -> Node {
+    loop {
+        evaluate_node(&args[0], env);
+    }
+}
+
+fn fn_print(args: &[Node], env: &mut Environment) -> Node {
+    evaluate_args(args, env)
+        .iter()
+        .for_each(|arg| println!("{}", arg.token.value));
+
+    fn_true()
+}
+
+fn fn_printenv(args: &[Node], env: &mut Environment) -> Node {
+    env.variables.iter().for_each(|(key, value)| {
+        println!("{}: {}", key, value.token.value);
+    });
+
+    fn_true()
+}
+
+fn fn_true() -> Node {
+    Node {
+        token: Token {
+            value: String::from("true"),
+            kind: TokenKind::Symbol,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
+fn fn_false() -> Node {
+    Node {
+        token: Token {
+            value: String::from("false"),
+            kind: TokenKind::Symbol,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
+fn fn_equal(args: &[Node], env: &mut Environment) -> Node {
+    let a = evaluate_node(&args[0], env);
+    let b = evaluate_node(&args[1], env);
+
+    if a.token.value == b.token.value {
+        fn_true()
+    } else {
+        fn_false()
+    }
+}
+
+fn fn_if(args: &[Node], env: &mut Environment) -> Node {
+    if evaluate_node(&args[0], env).token.value == "true" {
+        return evaluate_node(&args[1], env);
+    }
+
+    evaluate_node(&args[2], env)
+}
+
+fn fn_cond(args: &[Node], env: &mut Environment) -> Node {
+    args.iter().find_map(|arg| {
+        if evaluate_node(&arg.children[0], env).token.value == "true" {
+            Some(evaluate_node(&arg.children[1], env))
+        } else {
+            None
+        }
+    }).unwrap_or_else(|| fn_false())
+}
+
+fn fn_less_than(args: &[Node], env: &mut Environment) -> Node {
+    if evaluate_node(&args[0], env).token.value < evaluate_node(&args[1], env).token.value {
+        fn_true()
+    } else {
+        fn_false()
+    }
+}
+
+fn fn_greater_than(args: &[Node], env: &mut Environment) -> Node {
+    if evaluate_node(&args[0], env).token.value > evaluate_node(&args[1], env).token.value {
+        fn_true()
+    } else {
+        fn_false()
+    }
+}
+
+fn fn_def(args: &[Node], env: &mut Environment) -> Node {
+    let name = &args[0].token.value;
+    let value = evaluate_node(&args[1], env);
+    env.set(name.clone(), value);
+
+    fn_true()
+}
+
+fn fn_defun(args: &[Node], env: &mut Environment) -> Node {
+    let name = &args[0].token.value;
+    let params = args[1].clone();
+    let body = args[2].clone();
+    env.set(name.clone(), body);
+
+    fn_true()
+}
+
 fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node {
     match function.token.kind {
         TokenKind::Symbol => match function.token.value.as_str() {
-            "+" => {
-                let args = args
-                    .iter()
-                    .map(|arg| evaluate_node(arg, env))
-                    .collect::<Vec<_>>();
-
-                let mut sum = 0;
-                for arg in args {
-                    if let Ok(num) = arg.token.value.parse::<i32>() {
-                        sum += num;
-                    } else {
-                        panic!("Invalid argument for add: {}", arg.token.value);
-                    }
-                }
-                Node {
-                    token: Token {
-                        value: sum.to_string(),
-                        kind: TokenKind::Number,
-                        range: Range { start: 0, end: 0 },
-                    },
-                    children: Vec::new(),
-                }
-            }
-            "repeat" => {
-                let n = evaluate_node(&args[0], env);
-                for _ in 0..n.token.value.parse::<i32>().expect("Invalid number") {
-                    for arg in &args[1..] {
-                        evaluate_node(arg, env);
-                    }
-                }
-
-                Node {
-                    token: Token {
-                        value: String::from("repeat"),
-                        kind: TokenKind::Symbol,
-                        range: Range { start: 0, end: 0 },
-                    },
-                    children: Vec::new(),
-                }
-            }
-            "loop" => loop {
-                evaluate_node(&args[0], env);
-            },
-            "print" => {
-                let args = args
-                    .iter()
-                    .map(|arg| evaluate_node(arg, env))
-                    .collect::<Vec<_>>();
-
-                for arg in args {
-                    println!("{}", arg.token.value);
-                }
-
-                Node {
-                    token: Token {
-                        value: String::from("print"),
-                        kind: TokenKind::Symbol,
-                        range: Range { start: 0, end: 0 },
-                    },
-                    children: Vec::new(),
-                }
-            }
-            "true" => Node {
-                token: Token {
-                    value: String::from("true"),
-                    kind: TokenKind::Symbol,
-                    range: Range { start: 0, end: 0 },
-                },
-                children: Vec::new(),
-            },
-            "false" => Node {
-                token: Token {
-                    value: String::from("false"),
-                    kind: TokenKind::Symbol,
-                    range: Range { start: 0, end: 0 },
-                },
-                children: Vec::new(),
-            },
-            "equal" => {
-                let args = args
-                    .iter()
-                    .map(|arg| evaluate_node(arg, env))
-                    .collect::<Vec<_>>();
-
-                assert!(
-                    args.len() == 2,
-                    "equal function requires exactly 2 arguments"
-                );
-
-                let result = if args[0].token.value == args[1].token.value {
-                    "true"
-                } else {
-                    "false"
-                };
-
-                Node {
-                    token: Token {
-                        value: String::from(result),
-                        kind: TokenKind::Symbol,
-                        range: Range { start: 0, end: 0 },
-                    },
-                    children: Vec::new(),
-                }
-            }
-            "def" => {
-                let name = &args[0].token.value;
-                let value = evaluate_node(&args[1], env);
-                env.set(name.clone(), value);
-
-                Node {
-                    token: Token {
-                        value: String::from("def"),
-                        kind: TokenKind::Symbol,
-                        range: Range { start: 0, end: 0 },
-                    },
-                    children: Vec::new(),
-                }
-            }
-            "defun" => {
-                let name = &args[0].token.value;
-                let params = args[1].clone();
-                let body = args[2].clone();
-
-                env.set(name.clone(), body);
-
-                Node {
-                    token: Token {
-                        value: String::from("defun"),
-                        kind: TokenKind::Symbol,
-                        range: Range { start: 0, end: 0 },
-                    },
-                    children: Vec::new(),
-                }
-            }
-            "printenv" => {
-                for (key, value) in &env.variables {
-                    println!("{}: {}", key, value);
-                }
-
-                Node {
-                    token: Token {
-                        value: String::from("printenv"),
-                        kind: TokenKind::Symbol,
-                        range: Range { start: 0, end: 0 },
-                    },
-                    children: Vec::new(),
-                }
-            }
-            "if" => {
-                assert!(args.len() == 3, "if function requires exactly 3 arguments");
-
-                let condition = evaluate_node(&args[0], env);
-                if condition.token.value == "true" {
-                    evaluate_node(&args[1], env)
-                } else {
-                    evaluate_node(&args[2], env)
-                }
-            }
-            "cond" => {
-                for (_, item) in args.iter().enumerate() {
-                    let arg = evaluate_node(item, env);
-                    if arg.token.value == "true" {
-                        evaluate_node(&item.children[1], env);
-                        return arg;
-                    }
-                }
-
-                Node {
-                    token: Token {
-                        value: String::from("cond"),
-                        kind: TokenKind::Symbol,
-                        range: Range { start: 0, end: 0 },
-                    },
-                    children: Vec::new(),
-                }
-            }
-            "<" => {
-                assert_eq!(args.len(), 2, "< function requires exactly 2 arguments");
-
-                let left = evaluate_node(&args[0], env);
-                let right = evaluate_node(&args[1], env);
-
-                let result = if left.token.value < right.token.value {
-                    "true"
-                } else {
-                    "false"
-                };
-
-                Node {
-                    token: Token {
-                        value: String::from(result),
-                        kind: TokenKind::Symbol,
-                        range: Range { start: 0, end: 0 },
-                    },
-                    children: Vec::new(),
-                }
-            }
-            ">" => {
-                assert!(args.len() == 2, "Expected 2 arguments for > function");
-
-                let left = evaluate_node(&args[0], env);
-                let right = evaluate_node(&args[1], env);
-
-                let result = if left.token.value > right.token.value {
-                    "true"
-                } else {
-                    "false"
-                };
-
-                Node {
-                    token: Token {
-                        value: String::from(result),
-                        kind: TokenKind::Symbol,
-                        range: Range { start: 0, end: 0 },
-                    },
-                    children: Vec::new(),
-                }
-            }
+            "+" => fn_add(args, env),
+            "repeat" => fn_repeat(args, env),
+            "loop" => fn_loop(args, env),
+            "print" => fn_print(args, env),
+            "printenv" => fn_printenv(args, env),
+            "true" => fn_true(),
+            "false" => fn_false(),
+            "equal" => fn_equal(args, env),
+            "if" => fn_if(args, env),
+            "cond" => fn_cond(args, env),
+            "<" => fn_less_than(args, env),
+            ">" => fn_greater_than(args, env),
+            "def" => fn_def(args, env),
+            "defun" => fn_defun(args, env),
             _ => env.get(&function.token.value).map_or_else(
                 || panic!("Unknown function: {}", function.token.value),
                 std::clone::Clone::clone,
