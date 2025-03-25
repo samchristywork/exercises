@@ -183,6 +183,48 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
                     children: Vec::new(),
                 }
             }
+            "<" => {
+                assert_eq!(args.len(), 2, "< function requires exactly 2 arguments");
+
+                let left = evaluate_node(&args[0], env);
+                let right = evaluate_node(&args[1], env);
+
+                let result = if left.token.value < right.token.value {
+                    "true"
+                } else {
+                    "false"
+                };
+
+                Node {
+                    token: Token {
+                        value: String::from(result),
+                        kind: TokenKind::Symbol,
+                        range: Range { start: 0, end: 0 },
+                    },
+                    children: Vec::new(),
+                }
+            }
+            ">" => {
+                assert!(args.len() == 2, "Expected 2 arguments for > function");
+
+                let left = evaluate_node(&args[0], env);
+                let right = evaluate_node(&args[1], env);
+
+                let result = if left.token.value > right.token.value {
+                    "true"
+                } else {
+                    "false"
+                };
+
+                Node {
+                    token: Token {
+                        value: String::from(result),
+                        kind: TokenKind::Symbol,
+                        range: Range { start: 0, end: 0 },
+                    },
+                    children: Vec::new(),
+                }
+            }
             _ => env.get(&function.token.value).map_or_else(
                 || panic!("Unknown function: {}", function.token.value),
                 std::clone::Clone::clone,
