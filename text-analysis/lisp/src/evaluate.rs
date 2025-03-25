@@ -155,6 +155,34 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
                     children: Vec::new(),
                 }
             }
+            "if" => {
+                assert!(args.len() == 3, "if function requires exactly 3 arguments");
+
+                let condition = evaluate_node(&args[0], env);
+                if condition.token.value == "true" {
+                    evaluate_node(&args[1], env)
+                } else {
+                    evaluate_node(&args[2], env)
+                }
+            }
+            "cond" => {
+                for (_, item) in args.iter().enumerate() {
+                    let arg = evaluate_node(item, env);
+                    if arg.token.value == "true" {
+                        evaluate_node(&item.children[1], env);
+                        return arg;
+                    }
+                }
+
+                Node {
+                    token: Token {
+                        value: String::from("cond"),
+                        kind: TokenKind::Symbol,
+                        range: Range { start: 0, end: 0 },
+                    },
+                    children: Vec::new(),
+                }
+            }
             _ => env.get(&function.token.value).map_or_else(
                 || panic!("Unknown function: {}", function.token.value),
                 std::clone::Clone::clone,
