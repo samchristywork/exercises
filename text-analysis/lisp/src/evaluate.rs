@@ -91,6 +91,24 @@ fn fn_print(args: &[Node], env: &mut Environment) -> Node {
     fn_true()
 }
 
+fn fn_join(args: &[Node], env: &mut Environment) -> Node {
+    let separator = evaluate_node(&args[0], env).token.value.clone();
+    let strings = evaluate_args(&args[1..], env)
+        .iter()
+        .map(|arg| arg.token.value.clone())
+        .collect::<Vec<_>>()
+        .join(&separator);
+
+    Node {
+        token: Token {
+            value: strings,
+            kind: TokenKind::Text,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
 fn fn_printenv(args: &[Node], env: &mut Environment) -> Node {
     env.variables.iter().for_each(|(key, value)| {
         println!("{}: {}", key, value.token.value);
@@ -187,13 +205,16 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
     match function.token.kind {
         TokenKind::Symbol => match function.token.value.as_str() {
             "+" => fn_add(args, env),
+            "-" => fn_sub(args, env),
+            "*" => fn_mul(args, env),
             "repeat" => fn_repeat(args, env),
             "loop" => fn_loop(args, env),
             "print" => fn_print(args, env),
+            "join" => fn_join(args, env),
             "printenv" => fn_printenv(args, env),
             "true" => fn_true(),
             "false" => fn_false(),
-            "equal" => fn_equal(args, env),
+            "=" => fn_equal(args, env),
             "if" => fn_if(args, env),
             "cond" => fn_cond(args, env),
             "<" => fn_less_than(args, env),

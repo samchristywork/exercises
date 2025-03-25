@@ -109,13 +109,7 @@ fn read_file(filename: &str) -> String {
 fn main() {
     let filename = std::env::args().nth(1).expect("No filename provided");
     let source = read_file(&filename);
-
-    println!("Tokenizing");
     let tokens = tokenize(&source);
-
-    println!("Parsing");
     let ast = parse_tokens(&tokens);
-
-    println!("Evaluating");
     evaluate_node(&ast, &mut Environment::new());
 }
