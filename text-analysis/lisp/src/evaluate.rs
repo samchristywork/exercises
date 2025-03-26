@@ -229,6 +229,50 @@ fn fn_read_line() -> Node {
     }
 }
 
+fn fn_list(args: &[Node], env: &mut Environment) -> Node {
+    let list = evaluate_args!(args, env);
+    Node {
+        token: Token {
+            value: String::from("list"),
+            kind: TokenKind::LParen,
+            range: Range { start: 0, end: 0 },
+        },
+        children: list,
+    }
+}
+
+fn fn_map(args: &[Node], env: &mut Environment) -> Node {
+    let function = &args[0];
+    let list = &args[1];
+
+    let children = list
+        .children
+        .iter()
+        .map(|item| {
+            Node {
+                token: Token {
+                    value: String::from("map"),
+                    kind: TokenKind::LParen,
+                    range: Range { start: 0, end: 0 },
+                },
+                children: vec![function.clone(), item.clone()],
+            }
+        })
+        .collect::<Vec<_>>()
+        .iter()
+        .map(|child| evaluate_node(child, env))
+        .collect::<Vec<_>>();
+
+    Node {
+        token: Token {
+            value: String::from("map"),
+            kind: TokenKind::LParen,
+            range: Range { start: 0, end: 0 },
+        },
+        children,
+    }
+}
+
 fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node {
     match function.token.kind {
         TokenKind::Symbol => match function.token.value.as_str() {
@@ -250,6 +294,8 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
             "def" => fn_def(args, env),
             "defun" => fn_defun(args, env),
             "read-line" => fn_read_line(),
+            "list" => fn_list(args, env),
+            "map" => fn_map(args, env),
             _ => env.get(&function.token.value).map_or_else(
                 || panic!("Unknown function: {}", function.token.value),
                 std::clone::Clone::clone,
