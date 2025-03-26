@@ -195,8 +195,20 @@ fn fn_def(args: &[Node], env: &mut Environment) -> Node {
 fn fn_defun(args: &[Node], env: &mut Environment) -> Node {
     let name = &args[0].token.value;
     let params = args[1].clone();
-    let body = args[2].clone();
-    env.set(name.clone(), body);
+    let body = args[2..].to_vec();
+    let mut children = vec![params];
+    children.extend(body);
+
+    let lambda = Node {
+        token: Token {
+            value: String::from("lambda"),
+            kind: TokenKind::Lambda,
+            range: Range { start: 0, end: 0 },
+        },
+        children,
+    };
+
+    env.set(name.clone(), lambda);
 
     fn_true()
 }
@@ -243,6 +255,26 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
                 std::clone::Clone::clone,
             ),
         },
+        TokenKind::Lambda => {
+            let params = &function.children[0];
+            let body = &function.children[1..];
+
+            if params.children.len() != args.len() {
+                panic!("Argument count mismatch");
+            }
+
+            let mut new_env = env.clone();
+            for (param, arg) in params.children.iter().zip(args) {
+                new_env.set(param.token.value.clone(), evaluate_node(arg, env));
+            }
+
+            let mut return_value = fn_true();
+            for child in body {
+                return_value = evaluate_node(child, &mut new_env);
+            }
+
+            return_value
+        }
         TokenKind::LParen => {
             apply_function(&function.children[0].clone(), &function.children[1..], env)
         }
