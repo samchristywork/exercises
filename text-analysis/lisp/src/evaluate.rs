@@ -110,9 +110,17 @@ fn fn_join(args: &[Node], env: &mut Environment) -> Node {
 }
 
 fn fn_printenv(args: &[Node], env: &mut Environment) -> Node {
-    env.variables.iter().for_each(|(key, value)| {
-        println!("{}: {}", key, value.token.value);
-    });
+    if args.len() == 0 {
+        env.variables.iter().for_each(|(key, value)| {
+            println!("{}: {}", key, value);
+        });
+    } else {
+        env.variables.iter().for_each(|(key, value)| {
+            if key == &args[0].token.value {
+                println!("{}: {}", key, value);
+            }
+        });
+    }
 
     fn_true()
 }

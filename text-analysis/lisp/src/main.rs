@@ -63,6 +63,25 @@ struct Node {
     children: Vec<Node>,
 }
 
+impl Node {
+    fn string(&self) -> String {
+        match self.token.kind {
+            TokenKind::Text => self.token.value.clone(),
+            TokenKind::Number => self.token.value.clone(),
+            TokenKind::Symbol => self.token.value.clone(),
+            TokenKind::LParen => {
+                let mut result = String::new();
+                for child in &self.children {
+                    result.push_str(&child.string());
+                    result.push(' ');
+                }
+                result.trim_end().to_string()
+            }
+            _ => self.token.value.clone(),
+        }
+    }
+}
+
 // TODO
 fn to_string_indent(node: &Node, indent: usize) -> String {
     let mut result = String::new();
@@ -83,8 +102,18 @@ impl fmt::Display for Node {
     }
 }
 
+#[derive(Clone)]
 struct Environment {
     variables: std::collections::HashMap<String, Node>,
+}
+
+impl fmt::Display for Environment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (key, value) in &self.variables {
+            write!(f, "{}: {}\n", key, value)?;
+        }
+        Ok(())
+    }
 }
 
 impl Environment {
