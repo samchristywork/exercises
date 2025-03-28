@@ -4,16 +4,18 @@ use crate::Range;
 use crate::Token;
 use crate::TokenKind;
 
-fn evaluate_args(args: &[Node], env: &mut Environment) -> Vec<Node> {
-    args.iter()
-        .map(|arg| evaluate_node(arg, env))
-        .collect::<Vec<_>>()
+macro_rules! evaluate_args {
+    ($args:expr, $env:expr) => {
+        $args.iter()
+            .map(|arg| evaluate_node(arg, $env))
+            .collect::<Vec<_>>()
+    };
 }
 
 fn fn_add(args: &[Node], env: &mut Environment) -> Node {
     Node {
         token: Token {
-            value: evaluate_args(args, env)
+            value: evaluate_args!(args, env)
                 .iter()
                 .map(|arg| arg.token.value.parse::<i32>().expect("Invalid number"))
                 .sum::<i32>()
@@ -84,16 +86,22 @@ fn fn_loop(args: &[Node], env: &mut Environment) -> Node {
 }
 
 fn fn_print(args: &[Node], env: &mut Environment) -> Node {
-    evaluate_args(args, env)
-        .iter()
-        .for_each(|arg| println!("{}", arg.token.value));
+    println!(
+        "{}",
+        evaluate_args!(args, env)
+            .iter()
+            .map(|arg| arg.string())
+            .collect::<Vec<_>>()
+            .join(" ")
+            .as_str()
+    );
 
     fn_true()
 }
 
 fn fn_join(args: &[Node], env: &mut Environment) -> Node {
     let separator = evaluate_node(&args[0], env).token.value.clone();
-    let strings = evaluate_args(&args[1..], env)
+    let strings = evaluate_args!(&args[1..], env)
         .iter()
         .map(|arg| arg.token.value.clone())
         .collect::<Vec<_>>()
@@ -167,13 +175,15 @@ fn fn_if(args: &[Node], env: &mut Environment) -> Node {
 }
 
 fn fn_cond(args: &[Node], env: &mut Environment) -> Node {
-    args.iter().find_map(|arg| {
-        if evaluate_node(&arg.children[0], env).token.value == "true" {
-            Some(evaluate_node(&arg.children[1], env))
-        } else {
-            None
-        }
-    }).unwrap_or_else(|| fn_false())
+    args.iter()
+        .find_map(|arg| {
+            if evaluate_node(&arg.children[0], env).token.value == "true" {
+                Some(evaluate_node(&arg.children[1], env))
+            } else {
+                None
+            }
+        })
+        .unwrap_or_else(|| fn_false())
 }
 
 fn fn_less_than(args: &[Node], env: &mut Environment) -> Node {
