@@ -85,16 +85,16 @@ pub fn tokenize(source: &str) -> Vec<Token> {
             }
             '"' => {
                 let mut value = String::new();
-                value.push(c);
                 let mut end = start + 1;
 
                 while let Some(&(next_start, next_c)) = chars.peek() {
-                    value.push(next_c);
                     chars.next();
                     end = next_start + 1;
                     if next_c == '"' {
                         break;
                     }
+
+                    value.push(next_c);
                 }
                 tokens.push(Token {
                     value,
