@@ -1,6 +1,7 @@
 mod evaluate;
 mod parse;
 mod tokenize;
+mod intrinsic;
 
 use std::fmt;
 
