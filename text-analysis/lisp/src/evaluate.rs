@@ -12,6 +12,19 @@ macro_rules! evaluate_args {
     };
 }
 
+macro_rules! symbol {
+    ($value:expr) => {
+        Node {
+            token: Token {
+                value: $value.to_string(),
+                kind: TokenKind::Symbol,
+                range: Range { start: 0, end: 0 },
+            },
+            children: Vec::new(),
+        }
+    };
+}
+
 fn fn_add(args: &[Node], env: &mut Environment) -> Node {
     Node {
         token: Token {
@@ -76,7 +89,7 @@ fn fn_repeat(args: &[Node], env: &mut Environment) -> Node {
             evaluate_node(&args[1], env);
         });
 
-    fn_true()
+    symbol!("true")
 }
 
 fn fn_loop(args: &[Node], env: &mut Environment) -> Node {
@@ -96,7 +109,7 @@ fn fn_print(args: &[Node], env: &mut Environment) -> Node {
             .as_str()
     );
 
-    fn_true()
+    symbol!("true")
 }
 
 fn fn_join(args: &[Node], env: &mut Environment) -> Node {
@@ -130,29 +143,7 @@ fn fn_printenv(args: &[Node], env: &mut Environment) -> Node {
         });
     }
 
-    fn_true()
-}
-
-fn fn_true() -> Node {
-    Node {
-        token: Token {
-            value: String::from("true"),
-            kind: TokenKind::Symbol,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
-    }
-}
-
-fn fn_false() -> Node {
-    Node {
-        token: Token {
-            value: String::from("false"),
-            kind: TokenKind::Symbol,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
-    }
+    symbol!("true")
 }
 
 fn fn_equal(args: &[Node], env: &mut Environment) -> Node {
@@ -160,9 +151,9 @@ fn fn_equal(args: &[Node], env: &mut Environment) -> Node {
     let b = evaluate_node(&args[1], env);
 
     if a.token.value == b.token.value {
-        fn_true()
+        symbol!("true")
     } else {
-        fn_false()
+        symbol!("false")
     }
 }
 
@@ -183,22 +174,22 @@ fn fn_cond(args: &[Node], env: &mut Environment) -> Node {
                 None
             }
         })
-        .unwrap_or_else(|| fn_false())
+        .unwrap_or_else(|| symbol!("false"))
 }
 
 fn fn_less_than(args: &[Node], env: &mut Environment) -> Node {
     if evaluate_node(&args[0], env).token.value < evaluate_node(&args[1], env).token.value {
-        fn_true()
+        symbol!("true")
     } else {
-        fn_false()
+        symbol!("false")
     }
 }
 
 fn fn_greater_than(args: &[Node], env: &mut Environment) -> Node {
     if evaluate_node(&args[0], env).token.value > evaluate_node(&args[1], env).token.value {
-        fn_true()
+        symbol!("true")
     } else {
-        fn_false()
+        symbol!("false")
     }
 }
 
@@ -207,7 +198,7 @@ fn fn_def(args: &[Node], env: &mut Environment) -> Node {
     let value = evaluate_node(&args[1], env);
     env.set(name.clone(), value);
 
-    fn_true()
+    symbol!("true")
 }
 
 fn fn_defun(args: &[Node], env: &mut Environment) -> Node {
@@ -228,7 +219,7 @@ fn fn_defun(args: &[Node], env: &mut Environment) -> Node {
 
     env.set(name.clone(), lambda);
 
-    fn_true()
+    symbol!("true")
 }
 
 fn fn_read_line() -> Node {
@@ -302,8 +293,8 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
             "print" => fn_print(args, env),
             "join" => fn_join(args, env),
             "printenv" => fn_printenv(args, env),
-            "true" => fn_true(),
-            "false" => fn_false(),
+            "true" => symbol!("true"),
+            "false" => symbol!("false"),
             "=" => fn_equal(args, env),
             "if" => fn_if(args, env),
             "cond" => fn_cond(args, env),
@@ -332,7 +323,7 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
                 new_env.set(param.token.value.clone(), evaluate_node(arg, env));
             }
 
-            let mut return_value = fn_true();
+            let mut return_value = symbol!("true");
             for child in body {
                 return_value = evaluate_node(child, &mut new_env);
             }
