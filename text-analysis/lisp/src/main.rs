@@ -30,6 +30,7 @@ enum TokenKind {
     RParen,
     Module,
     Lambda,
+    Atom,
 }
 
 #[derive(Clone)]
@@ -53,6 +54,7 @@ impl fmt::Display for Token {
                 TokenKind::LParen => format!("Left Parenthesis: {}", self.value),
                 TokenKind::RParen => format!("Right Parenthesis: {}", self.value),
                 TokenKind::Lambda => format!("Lambda: {}", self.value),
+                TokenKind::Atom => format!("Atom: {}", self.value),
             }
         )
     }

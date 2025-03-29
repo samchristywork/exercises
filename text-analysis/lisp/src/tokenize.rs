@@ -4,14 +4,17 @@ use crate::TokenKind;
 
 fn is_symbol_char(c: char) -> bool {
     c.is_alphanumeric()
-        || c == '_'
+        || c == '%'
+        || c == '*'
         || c == '+'
         || c == '-'
-        || c == '*'
         || c == '/'
         || c == '<'
-        || c == '>'
         || c == '='
+        || c == '>'
+        || c == '?'
+        || c == '^'
+        || c == '_'
 }
 
 pub fn tokenize(source: &str) -> Vec<Token> {
@@ -80,6 +83,26 @@ pub fn tokenize(source: &str) -> Vec<Token> {
                 tokens.push(Token {
                     value,
                     kind: TokenKind::Symbol,
+                    range: Range { start, end },
+                });
+            }
+            ':' => {
+                let mut value = String::new();
+                value.push(c);
+                let mut end = start + 1;
+
+                while let Some(&(next_start, next_c)) = chars.peek() {
+                    if is_symbol_char(next_c) {
+                        value.push(next_c);
+                        chars.next();
+                        end = next_start + 1;
+                    } else {
+                        break;
+                    }
+                }
+                tokens.push(Token {
+                    value,
+                    kind: TokenKind::Atom,
                     range: Range { start, end },
                 });
             }
