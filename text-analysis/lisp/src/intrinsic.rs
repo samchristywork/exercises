@@ -125,6 +125,40 @@ pub fn fn_mod(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
+pub fn fn_inc(args: &[Node], env: &mut Environment) -> Node {
+    let n = evaluate_node(&args[0], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+
+    Node {
+        token: Token {
+            value: (n + 1).to_string(),
+            kind: TokenKind::Number,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
+pub fn fn_dec(args: &[Node], env: &mut Environment) -> Node {
+    let n = evaluate_node(&args[0], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+
+    Node {
+        token: Token {
+            value: (n - 1).to_string(),
+            kind: TokenKind::Number,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
 pub fn fn_repeat(args: &[Node], env: &mut Environment) -> Node {
     (0..evaluate_node(&args[0], env)
         .token
