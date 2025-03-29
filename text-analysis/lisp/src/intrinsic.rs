@@ -159,6 +159,40 @@ pub fn fn_dec(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
+pub fn fn_max(args: &[Node], env: &mut Environment) -> Node {
+    let max_value = evaluate_args!(args, env)
+        .iter()
+        .map(|arg| arg.token.value.parse::<i32>().expect("Invalid number"))
+        .max()
+        .unwrap_or(0);
+
+    Node {
+        token: Token {
+            value: max_value.to_string(),
+            kind: TokenKind::Number,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
+pub fn fn_min(args: &[Node], env: &mut Environment) -> Node {
+    let min_value = evaluate_args!(args, env)
+        .iter()
+        .map(|arg| arg.token.value.parse::<i32>().expect("Invalid number"))
+        .min()
+        .unwrap_or(0);
+
+    Node {
+        token: Token {
+            value: min_value.to_string(),
+            kind: TokenKind::Number,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
 pub fn fn_repeat(args: &[Node], env: &mut Environment) -> Node {
     (0..evaluate_node(&args[0], env)
         .token
