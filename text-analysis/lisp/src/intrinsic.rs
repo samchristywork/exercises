@@ -193,6 +193,60 @@ pub fn fn_min(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
+pub fn fn_is_text(args: &[Node], env: &mut Environment) -> Node {
+    let arg = evaluate_node(&args[0], env);
+    if arg.token.kind == TokenKind::Text {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
+
+pub fn fn_is_number(args: &[Node], env: &mut Environment) -> Node {
+    let arg = evaluate_node(&args[0], env);
+    if arg.token.kind == TokenKind::Number {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
+
+pub fn fn_is_symbol(args: &[Node], env: &mut Environment) -> Node {
+    let arg = evaluate_node(&args[0], env);
+    if arg.token.kind == TokenKind::Symbol {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
+
+pub fn fn_is_lparen(args: &[Node], env: &mut Environment) -> Node {
+    let arg = evaluate_node(&args[0], env);
+    if arg.token.kind == TokenKind::LParen {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
+
+pub fn fn_is_lambda(args: &[Node], env: &mut Environment) -> Node {
+    let arg = evaluate_node(&args[0], env);
+    if arg.token.kind == TokenKind::Lambda {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
+
+pub fn fn_is_atom(args: &[Node], env: &mut Environment) -> Node {
+    let arg = evaluate_node(&args[0], env);
+    if arg.token.kind == TokenKind::Atom {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
+
 pub fn fn_repeat(args: &[Node], env: &mut Environment) -> Node {
     (0..evaluate_node(&args[0], env)
         .token
