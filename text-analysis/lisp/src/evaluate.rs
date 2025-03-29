@@ -13,7 +13,7 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
             "loop" => intrinsic::fn_loop(args, env),
             "print" => intrinsic::fn_print(args, env),
             "join" => intrinsic::fn_join(args, env),
-            "print-env" => intrinsic::fn_printenv(args, env),
+            "print-env" => intrinsic::fn_print_env(args, env),
             "true" => intrinsic::fn_true(),
             "false" => intrinsic::fn_false(),
             "=" => intrinsic::fn_equal(args, env),
@@ -35,9 +35,7 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
             let params = &function.children[0];
             let body = &function.children[1..];
 
-            if params.children.len() != args.len() {
-                panic!("Argument count mismatch");
-            }
+            assert_eq!(params.children.len(), args.len(), "Argument count mismatch");
 
             let mut new_env = env.clone();
             for (param, arg) in params.children.iter().zip(args) {

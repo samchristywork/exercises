@@ -1,13 +1,14 @@
+use crate::Environment;
+use crate::Node;
 use crate::Range;
 use crate::Token;
-use crate::Node;
-use crate::Environment;
 use crate::TokenKind;
 use crate::evaluate_node;
 
 macro_rules! evaluate_args {
     ($args:expr, $env:expr) => {
-        $args.iter()
+        $args
+            .iter()
             .map(|arg| evaluate_node(arg, $env))
             .collect::<Vec<_>>()
     };
@@ -104,7 +105,7 @@ pub fn fn_print(args: &[Node], env: &mut Environment) -> Node {
         "{}",
         evaluate_args!(args, env)
             .iter()
-            .map(|arg| arg.string())
+            .map(super::Node::string)
             .collect::<Vec<_>>()
             .join(" ")
             .as_str()
@@ -114,7 +115,7 @@ pub fn fn_print(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_join(args: &[Node], env: &mut Environment) -> Node {
-    let separator = evaluate_node(&args[0], env).token.value.clone();
+    let separator = evaluate_node(&args[0], env).token.value;
     let strings = evaluate_args!(&args[1..], env)
         .iter()
         .map(|arg| arg.token.value.clone())
@@ -131,15 +132,15 @@ pub fn fn_join(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
-pub fn fn_printenv(args: &[Node], env: &mut Environment) -> Node {
-    if args.len() == 0 {
+pub fn fn_print_env(args: &[Node], env: &Environment) -> Node {
+    if args.is_empty() {
         env.variables.iter().for_each(|(key, value)| {
-            println!("{}: {}", key, value);
+            println!("{}: {}", key, value.string());
         });
     } else {
         env.variables.iter().for_each(|(key, value)| {
             if key == &args[0].token.value {
-                println!("{}: {}", key, value);
+                println!("{}: {}", key, value.string());
             }
         });
     }
@@ -258,15 +259,13 @@ pub fn fn_map(args: &[Node], env: &mut Environment) -> Node {
     let children = list
         .children
         .iter()
-        .map(|item| {
-            Node {
-                token: Token {
-                    value: String::from("map"),
-                    kind: TokenKind::LParen,
-                    range: Range { start: 0, end: 0 },
-                },
-                children: vec![function.clone(), item.clone()],
-            }
+        .map(|item| Node {
+            token: Token {
+                value: String::from("map"),
+                kind: TokenKind::LParen,
+                range: Range { start: 0, end: 0 },
+            },
+            children: vec![function.clone(), item.clone()],
         })
         .collect::<Vec<_>>()
         .iter()

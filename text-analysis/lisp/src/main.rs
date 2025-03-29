@@ -1,7 +1,7 @@
 mod evaluate;
+mod intrinsic;
 mod parse;
 mod tokenize;
-mod intrinsic;
 
 use std::fmt;
 
@@ -67,9 +67,6 @@ struct Node {
 impl Node {
     fn string(&self) -> String {
         match self.token.kind {
-            TokenKind::Text => self.token.value.clone(),
-            TokenKind::Number => self.token.value.clone(),
-            TokenKind::Symbol => self.token.value.clone(),
             TokenKind::LParen => {
                 let mut result = String::new();
                 for child in &self.children {
@@ -83,38 +80,9 @@ impl Node {
     }
 }
 
-// TODO
-fn to_string_indent(node: &Node, indent: usize) -> String {
-    let mut result = String::new();
-    for _ in 0..indent {
-        result.push(' ');
-    }
-    result.push_str(&node.token.value);
-    result.push('\n');
-    for child in &node.children {
-        result.push_str(&to_string_indent(child, indent + 2));
-    }
-    result
-}
-
-impl fmt::Display for Node {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", to_string_indent(self, 0))
-    }
-}
-
 #[derive(Clone)]
 struct Environment {
     variables: std::collections::HashMap<String, Node>,
-}
-
-impl fmt::Display for Environment {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (key, value) in &self.variables {
-            write!(f, "{}: {}\n", key, value)?;
-        }
-        Ok(())
-    }
 }
 
 impl Environment {
