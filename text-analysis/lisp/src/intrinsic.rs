@@ -81,6 +81,50 @@ pub fn fn_mul(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
+pub fn fn_pow(args: &[Node], env: &mut Environment) -> Node {
+    let base = evaluate_node(&args[0], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+    let exponent = evaluate_node(&args[1], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+
+    Node {
+        token: Token {
+            value: (base.pow(exponent as u32)).to_string(),
+            kind: TokenKind::Number,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
+pub fn fn_mod(args: &[Node], env: &mut Environment) -> Node {
+    let dividend = evaluate_node(&args[0], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+    let divisor = evaluate_node(&args[1], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+
+    Node {
+        token: Token {
+            value: (dividend % divisor).to_string(),
+            kind: TokenKind::Number,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
 pub fn fn_repeat(args: &[Node], env: &mut Environment) -> Node {
     (0..evaluate_node(&args[0], env)
         .token
