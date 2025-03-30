@@ -508,3 +508,31 @@ pub fn fn_true() -> Node {
 pub fn fn_false() -> Node {
     symbol!("false")
 }
+
+pub fn fn_is_even(args: &[Node], env: &mut Environment) -> Node {
+    let number = evaluate_node(&args[0], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+
+    if number % 2 == 0 {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
+
+pub fn fn_is_odd(args: &[Node], env: &mut Environment) -> Node {
+    let number = evaluate_node(&args[0], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+
+    if number % 2 != 0 {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
