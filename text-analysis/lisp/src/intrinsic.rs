@@ -464,6 +464,43 @@ pub fn fn_map(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
+pub fn fn_filter(args: &[Node], env: &mut Environment) -> Node {
+    let function = &args[0];
+    let list = &args[1];
+
+    let children = list
+        .children
+        .iter()
+        .filter_map(|item| {
+            let result = Node {
+                token: Token {
+                    value: String::from("filter"),
+                    kind: TokenKind::LParen,
+                    range: Range { start: 0, end: 0 },
+                },
+                children: vec![function.clone(), item.clone()],
+            };
+            if evaluate_node(&result, env).token.value == "true" {
+                Some(item.clone())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
+        .iter()
+        .map(|child| evaluate_node(child, env))
+        .collect::<Vec<_>>();
+
+    Node {
+        token: Token {
+            value: String::from("filter"),
+            kind: TokenKind::LParen,
+            range: Range { start: 0, end: 0 },
+        },
+        children,
+    }
+}
+
 pub fn fn_true() -> Node {
     symbol!("true")
 }
