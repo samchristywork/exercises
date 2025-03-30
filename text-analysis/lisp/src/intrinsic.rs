@@ -247,6 +247,22 @@ pub fn fn_is_atom(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
+pub fn fn_and(args: &[Node], env: &mut Environment) -> Node {
+    if args.iter().all(|arg| evaluate_node(arg, env).token.value == "true") {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
+
+pub fn fn_or(args: &[Node], env: &mut Environment) -> Node {
+    if args.iter().any(|arg| evaluate_node(arg, env).token.value == "true") {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
+
 pub fn fn_repeat(args: &[Node], env: &mut Environment) -> Node {
     (0..evaluate_node(&args[0], env)
         .token
