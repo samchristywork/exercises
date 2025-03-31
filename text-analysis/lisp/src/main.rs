@@ -1,3 +1,6 @@
+use std::io::Write;
+use std::fs;
+
 mod evaluate;
 mod intrinsic;
 mod parse;
@@ -103,15 +106,69 @@ impl Environment {
     }
 }
 
-fn read_file(filename: &str) -> String {
-    use std::fs;
-    fs::read_to_string(filename).expect("Unable to read file")
+fn process_string(source: &str) -> Node {
+    parse_tokens(&tokenize(&source))
+}
+
+fn process_file(filename: &str, env: &mut Environment) {
+    let source = fs::read_to_string(filename).expect("Unable to read file");
+    let ast = process_string(&source);
+    evaluate_node(&ast, env);
 }
 
 fn main() {
-    let filename = std::env::args().nth(1).expect("No filename provided");
-    let source = read_file(&filename);
-    let tokens = tokenize(&source);
-    let ast = parse_tokens(&tokens);
-    evaluate_node(&ast, &mut Environment::new());
+    let mut env = Environment::new();
+
+    let flags: Vec<String> = std::env::args()
+        .skip(1)
+        .filter(|arg| arg.starts_with('-'))
+        .collect();
+    let positional_args: Vec<String> = std::env::args()
+        .skip(1)
+        .filter(|arg| !arg.starts_with('-'))
+        .collect();
+
+    let mut repl = false;
+    let mut no_runtime = false;
+
+    for flag in &flags {
+        println!("Flag: {}", flag);
+        if flag == "--repl" || flag == "-r" {
+            repl = true;
+        } else if flag == "--no-runtime" || flag == "-n" {
+            no_runtime = true;
+        } else {
+            println!("Unknown flag: {}", flag);
+        }
+    }
+
+    for positional_arg in &positional_args {
+        println!("Positional argument: {}", positional_arg);
+    }
+
+    if !no_runtime {
+        process_file("runtime.lich", &mut env);
+    }
+
+    if repl {
+        println!("Starting REPL...");
+        loop {
+            let mut input = String::new();
+            print!("> ");
+            std::io::stdout().flush().expect("Failed to flush stdout");
+            std::io::stdin()
+                .read_line(&mut input)
+                .expect("Failed to read line");
+            let input = input.trim();
+            if input == "exit" {
+                break;
+            }
+            let ast = process_string(input);
+            evaluate_node(&ast, &mut env);
+        }
+    } else {
+        for arg in positional_args {
+            process_file(&arg, &mut env);
+        }
+    }
 }
