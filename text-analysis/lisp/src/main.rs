@@ -1,5 +1,5 @@
-use std::io::Write;
 use std::fs;
+use std::io::Write;
 
 mod evaluate;
 mod intrinsic;
@@ -107,7 +107,7 @@ impl Environment {
 }
 
 fn process_string(source: &str) -> Node {
-    parse_tokens(&tokenize(&source))
+    parse_tokens(&tokenize(source))
 }
 
 fn process_file(filename: &str, env: &mut Environment) {
@@ -132,18 +132,18 @@ fn main() {
     let mut no_runtime = false;
 
     for flag in &flags {
-        println!("Flag: {}", flag);
+        println!("Flag: {flag}");
         if flag == "--repl" || flag == "-r" {
             repl = true;
         } else if flag == "--no-runtime" || flag == "-n" {
             no_runtime = true;
         } else {
-            println!("Unknown flag: {}", flag);
+            println!("Unknown flag: {flag}");
         }
     }
 
     for positional_arg in &positional_args {
-        println!("Positional argument: {}", positional_arg);
+        println!("Positional argument: {positional_arg}");
     }
 
     if !no_runtime {

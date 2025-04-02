@@ -46,13 +46,13 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
         "text?" => intrinsic::fn_is_text(args, env),
         "number?" => intrinsic::fn_is_number(args, env),
         "symbol?" => intrinsic::fn_is_symbol(args, env),
-        "lparen?" => intrinsic::fn_is_lparen(args, env),
+        "list?" => intrinsic::fn_is_lparen(args, env),
         "lambda?" => intrinsic::fn_is_lambda(args, env),
         "atom?" => intrinsic::fn_is_atom(args, env),
 
         // Logical
-        "and" => intrinsic::fn_and(args, env),
-        "or" => intrinsic::fn_or(args, env),
+        "&" => intrinsic::fn_and(args, env),
+        "|" => intrinsic::fn_or(args, env),
 
         // Control flow
         "if" => intrinsic::fn_if(args, env),
@@ -63,7 +63,7 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
         "false" => intrinsic::fn_false(),
 
         // I/O
-        "print" => intrinsic::fn_print(args, env),
+        "write" => intrinsic::fn_write(args, env),
         "read-line" => intrinsic::fn_read_line(),
 
         // Strings
@@ -74,7 +74,7 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
 
         // Assignment
         "def" => intrinsic::fn_def(args, env),
-        "defun" => intrinsic::fn_defun(args, env),
+        "func" => intrinsic::fn_func(args, env),
 
         // Higher-order functions
         "map" => intrinsic::fn_map(args, env),

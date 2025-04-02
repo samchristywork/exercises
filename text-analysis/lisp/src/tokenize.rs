@@ -4,7 +4,9 @@ use crate::TokenKind;
 
 fn is_symbol_char(c: char) -> bool {
     c.is_alphanumeric()
+        || c == '$'
         || c == '%'
+        || c == '&'
         || c == '*'
         || c == '+'
         || c == '-'
@@ -15,6 +17,7 @@ fn is_symbol_char(c: char) -> bool {
         || c == '?'
         || c == '^'
         || c == '_'
+        || c == '|'
 }
 
 pub fn tokenize(source: &str) -> Vec<Token> {
@@ -22,35 +25,33 @@ pub fn tokenize(source: &str) -> Vec<Token> {
     let mut chars = source.char_indices().peekable();
 
     while let Some((start, c)) = chars.next() {
+        let mut end = start;
         match c {
             c if c.is_whitespace() => {} // Skip whitespace
             ';' => {
-                // Skip comment until newline
-                for (_, c) in chars.by_ref() {
-                    if c == '\n' {
+                while let Some(&(_, next_c)) = chars.peek() {
+                    if next_c == '\n' {
                         break;
                     }
+                    chars.next();
                 }
             }
             '(' => {
                 tokens.push(Token {
                     value: "(".to_string(),
                     kind: TokenKind::LParen,
-                    range: Range { start, end: start },
+                    range: Range { start, end },
                 });
             }
             ')' => {
                 tokens.push(Token {
                     value: ")".to_string(),
                     kind: TokenKind::RParen,
-                    range: Range { start, end: start },
+                    range: Range { start, end },
                 });
             }
             c if c.is_ascii_digit() => {
-                let mut value = String::new();
-                value.push(c);
-                let mut end = start + 1;
-
+                let mut value = String::from(c);
                 while let Some(&(next_start, next_c)) = chars.peek() {
                     if next_c.is_ascii_digit() {
                         value.push(next_c);
@@ -67,10 +68,7 @@ pub fn tokenize(source: &str) -> Vec<Token> {
                 });
             }
             c if is_symbol_char(c) => {
-                let mut value = String::new();
-                value.push(c);
-                let mut end = start + 1;
-
+                let mut value = String::from(c);
                 while let Some(&(next_start, next_c)) = chars.peek() {
                     if is_symbol_char(next_c) {
                         value.push(next_c);
@@ -87,10 +85,7 @@ pub fn tokenize(source: &str) -> Vec<Token> {
                 });
             }
             ':' => {
-                let mut value = String::new();
-                value.push(c);
-                let mut end = start + 1;
-
+                let mut value = String::from(c);
                 while let Some(&(next_start, next_c)) = chars.peek() {
                     if is_symbol_char(next_c) {
                         value.push(next_c);
@@ -108,8 +103,6 @@ pub fn tokenize(source: &str) -> Vec<Token> {
             }
             '"' => {
                 let mut value = String::new();
-                let mut end = start + 1;
-
                 while let Some(&(next_start, next_c)) = chars.peek() {
                     chars.next();
                     end = next_start + 1;

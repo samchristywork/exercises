@@ -95,7 +95,7 @@ pub fn fn_pow(args: &[Node], env: &mut Environment) -> Node {
 
     Node {
         token: Token {
-            value: (base.pow(exponent as u32)).to_string(),
+            value: (base.pow(exponent.try_into().expect("Invalid exponent"))).to_string(),
             kind: TokenKind::Number,
             range: Range { start: 0, end: 0 },
         },
@@ -248,7 +248,10 @@ pub fn fn_is_atom(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_and(args: &[Node], env: &mut Environment) -> Node {
-    if args.iter().all(|arg| evaluate_node(arg, env).token.value == "true") {
+    if args
+        .iter()
+        .all(|arg| evaluate_node(arg, env).token.value == "true")
+    {
         symbol!("true")
     } else {
         symbol!("false")
@@ -256,7 +259,10 @@ pub fn fn_and(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_or(args: &[Node], env: &mut Environment) -> Node {
-    if args.iter().any(|arg| evaluate_node(arg, env).token.value == "true") {
+    if args
+        .iter()
+        .any(|arg| evaluate_node(arg, env).token.value == "true")
+    {
         symbol!("true")
     } else {
         symbol!("false")
@@ -282,7 +288,7 @@ pub fn fn_loop(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
-pub fn fn_print(args: &[Node], env: &mut Environment) -> Node {
+pub fn fn_write(args: &[Node], env: &mut Environment) -> Node {
     println!(
         "{}",
         evaluate_args!(args, env)
@@ -385,7 +391,7 @@ pub fn fn_def(args: &[Node], env: &mut Environment) -> Node {
     symbol!("true")
 }
 
-pub fn fn_defun(args: &[Node], env: &mut Environment) -> Node {
+pub fn fn_func(args: &[Node], env: &mut Environment) -> Node {
     let name = &args[0].token.value;
     let params = args[1].clone();
     let body = args[2..].to_vec();
