@@ -61,7 +61,7 @@ pub fn tokenize(source: &str) -> Vec<Token> {
                     if next_c.is_ascii_digit() {
                         value.push(next_c);
                         chars.next();
-                        end = next_start + 1;
+                        end = next_start;
                     } else {
                         break;
                     }
@@ -78,7 +78,7 @@ pub fn tokenize(source: &str) -> Vec<Token> {
                     if is_symbol_char(next_c) {
                         value.push(next_c);
                         chars.next();
-                        end = next_start + 1;
+                        end = next_start;
                     } else {
                         break;
                     }
@@ -95,7 +95,7 @@ pub fn tokenize(source: &str) -> Vec<Token> {
                     if is_symbol_char(next_c) {
                         value.push(next_c);
                         chars.next();
-                        end = next_start + 1;
+                        end = next_start;
                     } else {
                         break;
                     }
@@ -110,7 +110,7 @@ pub fn tokenize(source: &str) -> Vec<Token> {
                 let mut value = String::new();
                 while let Some(&(next_start, next_c)) = chars.peek() {
                     chars.next();
-                    end = next_start + 1;
+                    end = next_start;
                     if next_c == '"' {
                         break;
                     }
