@@ -4,6 +4,7 @@ use crate::Range;
 use crate::Token;
 use crate::TokenKind;
 use crate::evaluate_node;
+use crate::process_file;
 
 macro_rules! evaluate_args {
     ($args:expr, $env:expr) => {
@@ -633,6 +634,12 @@ pub fn fn_length(args: &[Node], env: &mut Environment) -> Node {
         },
         children: Vec::new(),
     }
+}
+
+pub fn fn_load(args: &[Node], env: &mut Environment) -> Node {
+    let filename = evaluate_node(&args[0], env).token.value;
+    process_file(&filename, env, true, false, false);
+    symbol!("true")
 }
 
 pub fn fn_url_encode(args: &[Node], env: &mut Environment) -> Node {

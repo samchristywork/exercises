@@ -94,6 +94,7 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
         "odd?" => intrinsic::fn_is_odd(args, env),
         "url-encode" => intrinsic::fn_url_encode(args, env),
         "url-decode" => intrinsic::fn_url_decode(args, env),
+        "load!" => intrinsic::fn_load(args, env),
         _ => env.get(&function.token.value).map_or_else(
             || panic!("Unknown function: {}", function.token.value),
             std::clone::Clone::clone,
