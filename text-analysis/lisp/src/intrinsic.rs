@@ -302,6 +302,43 @@ pub fn fn_write(args: &[Node], env: &mut Environment) -> Node {
     symbol!("true")
 }
 
+pub fn fn_write_stderr(args: &[Node], env: &mut Environment) -> Node {
+    eprintln!(
+        "{}",
+        evaluate_args!(args, env)
+            .iter()
+            .map(super::Node::string)
+            .collect::<Vec<_>>()
+            .join(" ")
+            .as_str()
+    );
+
+    symbol!("true")
+}
+
+pub fn fn_write_file(args: &[Node], env: &mut Environment) -> Node {
+    let filename = evaluate_node(&args[0], env).token.value;
+    let content = evaluate_node(&args[1], env).token.value;
+
+    std::fs::write(filename, content).expect("Unable to write file");
+
+    symbol!("true")
+}
+
+pub fn fn_read_file(args: &[Node], env: &mut Environment) -> Node {
+    let filename = evaluate_node(&args[0], env).token.value;
+    let content = std::fs::read_to_string(filename).expect("Unable to read file");
+
+    Node {
+        token: Token {
+            value: content,
+            kind: TokenKind::Text,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
 pub fn fn_join(args: &[Node], env: &mut Environment) -> Node {
     let separator = evaluate_node(&args[0], env).token.value;
     let strings = evaluate_args!(&args[1..], env)

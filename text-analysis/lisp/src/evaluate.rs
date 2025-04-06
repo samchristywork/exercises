@@ -64,7 +64,10 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
 
         // I/O
         "write!" => intrinsic::fn_write(args, env),
+        "write-stderr!" => intrinsic::fn_write_stderr(args, env),
+        "write-file!" => intrinsic::fn_write_file(args, env),
         "read-line!" => intrinsic::fn_read_line(),
+        "read-file!" => intrinsic::fn_read_file(args, env),
 
         // Strings
         "join" => intrinsic::fn_join(args, env),
