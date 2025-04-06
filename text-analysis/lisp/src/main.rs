@@ -141,13 +141,28 @@ impl Environment {
     }
 }
 
-fn process_string(source: &str) -> Node {
-    parse_tokens(&tokenize(source))
-}
+fn process_file(filename: &str, env: &mut Environment, script: bool, print_tokens: bool, print_ast: bool) {
+    let mut source = fs::read_to_string(filename).expect("Unable to read file");
+    if script {
+        if source.starts_with("#!") {
+            if let Some(new_line_index) = source.find('\n') {
+                source = source[new_line_index + 1..].to_string();
+            }
+        }
+    }
 
-fn process_file(filename: &str, env: &mut Environment) {
-    let source = fs::read_to_string(filename).expect("Unable to read file");
-    let ast = process_string(&source);
+    let tokens = tokenize(&source);
+    if print_tokens {
+        println!("\n{GREY}Tokens:{NORMAL}");
+        for token in &tokens {
+            println!("{CYAN}{}{NORMAL}", token);
+        }
+    }
+    let ast = parse_tokens(&tokens);
+    if print_ast {
+        println!("\n{GREY}AST:{NORMAL}");
+        println!("{}", ast);
+    }
     evaluate_node(&ast, env);
 }
 
@@ -164,25 +179,35 @@ fn main() {
         .collect();
 
     let mut repl = false;
-    let mut no_runtime = false;
+    let mut script = false;
+    let mut print_tokens = false;
+    let mut print_ast = false;
 
     for flag in &flags {
-        println!("Flag: {flag}");
         if flag == "--repl" || flag == "-r" {
             repl = true;
-        } else if flag == "--no-runtime" || flag == "-n" {
-            no_runtime = true;
+        } else if flag == "--script" || flag == "-s" {
+            script = true;
+        } else if flag == "--print-tokens" || flag == "-t" {
+            print_tokens = true;
+        } else if flag == "--print-ast" || flag == "-a" {
+            print_ast = true;
+        } else if flag == "--version" || flag == "-v" {
+            println!("Lich version 2025.4.1");
+            return;
+        } else if flag == "--help" || flag == "-h" {
+            println!("Usage: lich [options] [file]");
+            println!("Options:");
+            println!("  -r, --repl             Start the REPL");
+            println!("  -s, --script           Run the script");
+            println!("  -t, --print-tokens     Print tokens");
+            println!("  -a, --print-ast        Print AST");
+            println!("  -v, --version          Show version");
+            println!("  -h, --help             Show this help message");
+            return;
         } else {
             println!("Unknown flag: {flag}");
         }
-    }
-
-    for positional_arg in &positional_args {
-        println!("Positional argument: {positional_arg}");
-    }
-
-    if !no_runtime {
-        process_file("runtime.lich", &mut env);
     }
 
     if repl {
@@ -195,15 +220,28 @@ fn main() {
                 .read_line(&mut input)
                 .expect("Failed to read line");
             let input = input.trim();
-            if input == "exit" {
+            if input == "exit" || input.is_empty() {
                 break;
             }
-            let ast = process_string(input);
+            let tokens = tokenize(input);
+            if print_tokens {
+                println!("\n{GREY}Tokens:{NORMAL}");
+                for token in &tokens {
+                    println!("{}", token);
+                }
+            }
+            let ast = parse_tokens(&tokens);
+            if print_ast {
+                println!("\n{GREY}AST:{NORMAL}");
+                println!("{CYAN}{}{NORMAL}", ast);
+            }
+
             evaluate_node(&ast, &mut env);
         }
     } else {
         for arg in positional_args {
-            process_file(&arg, &mut env);
+            process_file(&arg, &mut env, script, print_tokens, print_ast);
+            return;
         }
     }
 }
