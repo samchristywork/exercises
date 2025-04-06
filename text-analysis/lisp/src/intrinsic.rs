@@ -579,3 +579,34 @@ pub fn fn_length(args: &[Node], env: &mut Environment) -> Node {
         children: Vec::new(),
     }
 }
+
+pub fn fn_url_encode(args: &[Node], env: &mut Environment) -> Node {
+    let input = evaluate_node(&args[0], env).token.value;
+    let encoded = url::form_urlencoded::byte_serialize(input.as_bytes()).collect::<String>();
+
+    Node {
+        token: Token {
+            value: encoded,
+            kind: TokenKind::Text,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
+pub fn fn_url_decode(args: &[Node], env: &mut Environment) -> Node {
+    let input = evaluate_node(&args[0], env).token.value;
+    let decoded = url::form_urlencoded::parse(input.as_bytes())
+        .map(|(key, value)| format!("{}={}", key, value))
+        .collect::<Vec<_>>()
+        .join("&");
+
+    Node {
+        token: Token {
+            value: decoded,
+            kind: TokenKind::Text,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
