@@ -43,15 +43,21 @@ struct Token {
     range: Range,
 }
 
+const MAGENTA: &str = "\x1b[35m";
+const YELLOW: &str = "\x1b[33m";
+const NORMAL: &str = "\x1b[0m";
+const GREY: &str = "\x1b[90m";
+const CYAN: &str = "\x1b[36m";
+
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}: {}",
+            "{MAGENTA}{}: {YELLOW}{}{NORMAL}",
             self.range,
             match self.kind {
                 TokenKind::Module => format!("Module: {}", self.value),
-                TokenKind::Text => format!("String: {}", self.value),
+                TokenKind::Text => format!("String: \"{}\"", self.value),
                 TokenKind::Number => format!("Number: {}", self.value),
                 TokenKind::Symbol => format!("Symbol: {}", self.value),
                 TokenKind::LParen => format!("Left Parenthesis: {}", self.value),
@@ -67,6 +73,35 @@ impl fmt::Display for Token {
 struct Node {
     token: Token,
     children: Vec<Node>,
+}
+
+fn print_tree(node: &Node, depth: usize) -> String {
+    let mut result = String::new();
+    for _ in 0..depth {
+        result.push_str("  ");
+    }
+    if node.token.kind == TokenKind::Text {
+        result.push_str(&format!("\"{}\"", node.token.value));
+    } else {
+        result.push_str(&node.token.value);
+    }
+    result.push('\n');
+    for child in &node.children {
+        result.push_str(&print_tree(child, depth + 1));
+    }
+    if node.token.kind == TokenKind::LParen {
+        for _ in 0..depth {
+            result.push_str("  ");
+        }
+        result.push_str(")\n");
+    }
+    result
+}
+
+impl fmt::Display for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", print_tree(self, 0))
+    }
 }
 
 impl Node {
