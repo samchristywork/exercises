@@ -63,18 +63,18 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
         "false" => intrinsic::fn_false(),
 
         // I/O
-        "write" => intrinsic::fn_write(args, env),
-        "read-line" => intrinsic::fn_read_line(),
+        "write!" => intrinsic::fn_write(args, env),
+        "read-line!" => intrinsic::fn_read_line(),
 
         // Strings
         "join" => intrinsic::fn_join(args, env),
 
         // Environment
-        "print-env" => intrinsic::fn_print_env(args, env),
+        "print-env!" => intrinsic::fn_print_env(args, env),
 
         // Assignment
-        "def" => intrinsic::fn_def(args, env),
-        "func" => intrinsic::fn_func(args, env),
+        "def!" => intrinsic::fn_def(args, env),
+        "func!" => intrinsic::fn_func(args, env),
 
         // Higher-order functions
         "map" => intrinsic::fn_map(args, env),

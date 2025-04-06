@@ -4,20 +4,25 @@ use crate::TokenKind;
 
 fn is_symbol_char(c: char) -> bool {
     c.is_alphanumeric()
+        || c == '!'
         || c == '$'
         || c == '%'
         || c == '&'
         || c == '*'
         || c == '+'
         || c == '-'
+        || c == '.'
         || c == '/'
+        || c == ':'
         || c == '<'
         || c == '='
         || c == '>'
         || c == '?'
+        || c == '\''
         || c == '^'
         || c == '_'
         || c == '|'
+        || c == '~'
 }
 
 pub fn tokenize(source: &str) -> Vec<Token> {

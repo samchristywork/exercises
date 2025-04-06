@@ -391,12 +391,30 @@ pub fn fn_def(args: &[Node], env: &mut Environment) -> Node {
     symbol!("true")
 }
 
+fn look_for_bang(children: &[Node]) -> bool {
+    children.iter().any(|child| {
+        if child.token.kind == TokenKind::Symbol {
+            child.token.value.ends_with('!')
+        } else {
+            look_for_bang(&child.children)
+        }
+    })
+}
+
 pub fn fn_func(args: &[Node], env: &mut Environment) -> Node {
     let name = &args[0].token.value;
     let params = args[1].clone();
     let body = args[2..].to_vec();
     let mut children = vec![params];
     children.extend(body);
+
+    let name_ends_with_bang = name.ends_with('!');
+    let at_least_one_child_identifier_ends_with_bang = look_for_bang(&children);
+    assert_eq!(
+        name_ends_with_bang,
+        at_least_one_child_identifier_ends_with_bang,
+        "Function name and child identifiers must match the bang convention",
+    );
 
     let lambda = Node {
         token: Token {
