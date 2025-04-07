@@ -672,3 +672,23 @@ pub fn fn_url_decode(args: &[Node], env: &mut Environment) -> Node {
         children: Vec::new(),
     }
 }
+
+pub fn fn_sleep(args: &[Node], _env: &mut Environment) -> Node {
+    let duration = evaluate_node(&args[0], _env)
+        .token
+        .value
+        .parse::<u64>()
+        .expect("Invalid number");
+    std::thread::sleep(std::time::Duration::from_secs(duration));
+    symbol!("true")
+}
+
+pub fn fn_sleep_ms(args: &[Node], _env: &mut Environment) -> Node {
+    let duration = evaluate_node(&args[0], _env)
+        .token
+        .value
+        .parse::<u64>()
+        .expect("Invalid number");
+    std::thread::sleep(std::time::Duration::from_millis(duration));
+    symbol!("true")
+}
