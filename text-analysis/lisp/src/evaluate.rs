@@ -51,8 +51,8 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
         "atom?" => intrinsic::fn_is_atom(args, env),
 
         // Logical
-        "&" => intrinsic::fn_and(args, env),
-        "|" => intrinsic::fn_or(args, env),
+        "&&" => intrinsic::fn_and(args, env),
+        "||" => intrinsic::fn_or(args, env),
 
         // Control flow
         "if" => intrinsic::fn_if(args, env),
@@ -71,6 +71,8 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
 
         // Strings
         "join" => intrinsic::fn_join(args, env),
+        "split" => intrinsic::fn_split(args, env),
+        "empty-string?" => intrinsic::fn_empty_string(args, env),
 
         // Environment
         "print-env!" => intrinsic::fn_print_env(args, env),

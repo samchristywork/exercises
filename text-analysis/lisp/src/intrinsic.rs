@@ -358,6 +358,40 @@ pub fn fn_join(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
+pub fn fn_split(args: &[Node], env: &mut Environment) -> Node {
+    let separator = evaluate_node(&args[0], env).token.value;
+    let string = evaluate_node(&args[1], env).token.value;
+
+    let parts = string.split(&separator).map(|s| {
+        Node {
+            token: Token {
+                value: s.to_string(),
+                kind: TokenKind::Text,
+                range: Range { start: 0, end: 0 },
+            },
+            children: Vec::new(),
+        }
+    });
+
+    Node {
+        token: Token {
+            value: String::from("split"),
+            kind: TokenKind::LParen,
+            range: Range { start: 0, end: 0 },
+        },
+        children: parts.collect(),
+    }
+}
+
+pub fn fn_empty_string(args: &[Node], env: &mut Environment) -> Node {
+    let arg = evaluate_node(&args[0], env);
+    if arg.token.value.is_empty() {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
+
 pub fn fn_print_env(args: &[Node], env: &Environment) -> Node {
     if args.is_empty() {
         env.variables.iter().for_each(|(key, value)| {
