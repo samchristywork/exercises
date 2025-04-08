@@ -1,5 +1,3 @@
-use std::env::var;
-
 use crate::Environment;
 use crate::Node;
 use crate::Range;
@@ -442,7 +440,18 @@ pub fn fn_cond(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_less_than(args: &[Node], env: &mut Environment) -> Node {
-    if evaluate_node(&args[0], env).token.value < evaluate_node(&args[1], env).token.value {
+    let a = evaluate_node(&args[0], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+    let b = evaluate_node(&args[1], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+
+    if a < b {
         symbol!("true")
     } else {
         symbol!("false")
@@ -450,7 +459,18 @@ pub fn fn_less_than(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_greater_than(args: &[Node], env: &mut Environment) -> Node {
-    if evaluate_node(&args[0], env).token.value > evaluate_node(&args[1], env).token.value {
+    let a = evaluate_node(&args[0], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+    let b = evaluate_node(&args[1], env)
+        .token
+        .value
+        .parse::<i32>()
+        .expect("Invalid number");
+
+    if a > b {
         symbol!("true")
     } else {
         symbol!("false")
@@ -635,9 +655,9 @@ pub fn fn_is_odd(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
-pub fn fn_get_environment_variable(args: &[Node], env: &Environment) -> Node {
-    let var_name = &args[0].token.value;
-    let value = var(var_name).unwrap_or_else(|_| String::from("nil"));
+pub fn fn_get_environment_variable(args: &[Node], env: &mut Environment) -> Node {
+    let var_name = evaluate_node(&args[0], env).token.value;
+    let value = std::env::var(var_name).unwrap_or_else(|_| String::from("nil"));
     Node {
         token: Token {
             value,
@@ -654,6 +674,15 @@ pub fn fn_head(args: &[Node], env: &mut Environment) -> Node {
         symbol!("nil")
     } else {
         list.children[0].clone()
+    }
+}
+
+pub fn fn_last(args: &[Node], env: &mut Environment) -> Node {
+    let list = evaluate_node(&args[0], env);
+    if list.children.is_empty() {
+        symbol!("nil")
+    } else {
+        list.children.last().unwrap().clone()
     }
 }
 
