@@ -1,3 +1,5 @@
+use std::env::var;
+
 use crate::Environment;
 use crate::Node;
 use crate::Range;
@@ -630,6 +632,19 @@ pub fn fn_is_odd(args: &[Node], env: &mut Environment) -> Node {
         symbol!("true")
     } else {
         symbol!("false")
+    }
+}
+
+pub fn fn_get_environment_variable(args: &[Node], env: &Environment) -> Node {
+    let var_name = &args[0].token.value;
+    let value = var(var_name).unwrap_or_else(|_| String::from("nil"));
+    Node {
+        token: Token {
+            value,
+            kind: TokenKind::Text,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
     }
 }
 

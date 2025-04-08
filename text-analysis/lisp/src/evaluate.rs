@@ -92,6 +92,7 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
         "length" => intrinsic::fn_length(args, env),
 
         // Miscellaneous
+        "get-environment-variable!" => intrinsic::fn_get_environment_variable(args, env),
         "even?" => intrinsic::fn_is_even(args, env),
         "odd?" => intrinsic::fn_is_odd(args, env),
         "url-encode" => intrinsic::fn_url_encode(args, env),
