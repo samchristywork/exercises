@@ -133,6 +133,6 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
         TokenKind::LParen => {
             apply_function(&function.children[0].clone(), &function.children[1..], env)
         }
-        _ => panic!("Invalid function application"),
+        _ => panic!("Invalid function application: {}", function.token.value),
     }
 }
