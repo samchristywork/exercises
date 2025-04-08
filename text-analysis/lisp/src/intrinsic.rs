@@ -43,6 +43,21 @@ macro_rules! expect_number {
     };
 }
 
+macro_rules! expect_text {
+    ($arg:expr, $env:expr) => {
+        {
+            let arg = evaluate_node($arg, $env);
+            assert_eq!(
+                arg.token.kind,
+                TokenKind::Text,
+                "Expected a text, but got: {}",
+                arg.token.value
+            );
+            arg.token.value.clone()
+        }
+    };
+}
+
 pub fn fn_add(args: &[Node], env: &mut Environment) -> Node {
     Node {
         token: Token {
@@ -283,8 +298,8 @@ pub fn fn_write_stderr(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_write_file(args: &[Node], env: &mut Environment) -> Node {
-    let filename = evaluate_node(&args[0], env).token.value;
-    let content = evaluate_node(&args[1], env).token.value;
+    let filename = expect_text!(&args[0], env);
+    let content = expect_text!(&args[1], env);
 
     std::fs::write(filename, content).expect("Unable to write file");
 
@@ -292,7 +307,7 @@ pub fn fn_write_file(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_read_file(args: &[Node], env: &mut Environment) -> Node {
-    let filename = evaluate_node(&args[0], env).token.value;
+    let filename = expect_text!(&args[0], env);
     let content = std::fs::read_to_string(filename).expect("Unable to read file");
 
     Node {
@@ -306,7 +321,7 @@ pub fn fn_read_file(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_join(args: &[Node], env: &mut Environment) -> Node {
-    let separator = evaluate_node(&args[0], env).token.value;
+    let separator = expect_text!(&args[0], env);
     let strings = evaluate_args!(&args[1].children, env)
         .iter()
         .map(|arg| arg.token.value.clone())
@@ -324,8 +339,8 @@ pub fn fn_join(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_split(args: &[Node], env: &mut Environment) -> Node {
-    let separator = evaluate_node(&args[0], env).token.value;
-    let string = evaluate_node(&args[1], env).token.value;
+    let separator = expect_text!(&args[0], env);
+    let string = expect_text!(&args[1], env);
 
     let parts = string.split(&separator).map(|s| {
         Node {
@@ -349,8 +364,8 @@ pub fn fn_split(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_empty_string(args: &[Node], env: &mut Environment) -> Node {
-    let arg = evaluate_node(&args[0], env);
-    if arg.token.value.is_empty() {
+    let arg = expect_text!(&args[0], env);
+    if arg.is_empty() {
         symbol!("true")
     } else {
         symbol!("false")
@@ -587,7 +602,7 @@ pub fn fn_is_odd(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_get_environment_variable(args: &[Node], env: &mut Environment) -> Node {
-    let var_name = evaluate_node(&args[0], env).token.value;
+    let var_name = expect_text!(&args[0], env);
     let value = std::env::var(var_name).unwrap_or_else(|_| String::from("nil"));
     Node {
         token: Token {
@@ -646,13 +661,13 @@ pub fn fn_length(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_load(args: &[Node], env: &mut Environment) -> Node {
-    let filename = evaluate_node(&args[0], env).token.value;
+    let filename = expect_text!(&args[0], env);
     process_file(&filename, env, true, false, false);
     symbol!("true")
 }
 
 pub fn fn_url_encode(args: &[Node], env: &mut Environment) -> Node {
-    let input = evaluate_node(&args[0], env).token.value;
+    let input = expect_text!(&args[0], env);
     let encoded = url::form_urlencoded::byte_serialize(input.as_bytes()).collect::<String>();
 
     Node {
@@ -666,7 +681,7 @@ pub fn fn_url_encode(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_url_decode(args: &[Node], env: &mut Environment) -> Node {
-    let input = evaluate_node(&args[0], env).token.value;
+    let input = expect_text!(&args[0], env);
     let decoded = url::form_urlencoded::parse(input.as_bytes())
         .map(|(key, value)| format!("{key}={value}"))
         .collect::<Vec<_>>()
