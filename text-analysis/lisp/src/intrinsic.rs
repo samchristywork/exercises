@@ -174,58 +174,38 @@ pub fn fn_min(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
+macro_rules! is_type {
+    ($arg:expr, $env:expr, $kind:expr) => {
+        if evaluate_node($arg, $env).token.kind == $kind {
+            symbol!("true")
+        } else {
+            symbol!("false")
+        }
+    };
+}
+
 pub fn fn_is_text(args: &[Node], env: &mut Environment) -> Node {
-    let arg = evaluate_node(&args[0], env);
-    if arg.token.kind == TokenKind::Text {
-        symbol!("true")
-    } else {
-        symbol!("false")
-    }
+    is_type!(&args[0], env, TokenKind::Text)
 }
 
 pub fn fn_is_number(args: &[Node], env: &mut Environment) -> Node {
-    let arg = evaluate_node(&args[0], env);
-    if arg.token.kind == TokenKind::Number {
-        symbol!("true")
-    } else {
-        symbol!("false")
-    }
+    is_type!(&args[0], env, TokenKind::Number)
 }
 
 pub fn fn_is_symbol(args: &[Node], env: &mut Environment) -> Node {
-    let arg = evaluate_node(&args[0], env);
-    if arg.token.kind == TokenKind::Symbol {
-        symbol!("true")
-    } else {
-        symbol!("false")
-    }
+    is_type!(&args[0], env, TokenKind::Symbol)
 }
 
 pub fn fn_is_lparen(args: &[Node], env: &mut Environment) -> Node {
-    let arg = evaluate_node(&args[0], env);
-    if arg.token.kind == TokenKind::LParen {
-        symbol!("true")
-    } else {
-        symbol!("false")
-    }
+    is_type!(&args[0], env, TokenKind::LParen)
 }
 
 pub fn fn_is_lambda(args: &[Node], env: &mut Environment) -> Node {
-    let arg = evaluate_node(&args[0], env);
-    if arg.token.kind == TokenKind::Lambda {
-        symbol!("true")
-    } else {
-        symbol!("false")
-    }
+    is_type!(&args[0], env, TokenKind::Lambda)
 }
 
 pub fn fn_is_atom(args: &[Node], env: &mut Environment) -> Node {
-    let arg = evaluate_node(&args[0], env);
-    if arg.token.kind == TokenKind::Atom {
-        symbol!("true")
-    } else {
-        symbol!("false")
-    }
+    is_type!(&args[0], env, TokenKind::Atom)
 }
 
 pub fn fn_and(args: &[Node], env: &mut Environment) -> Node {
