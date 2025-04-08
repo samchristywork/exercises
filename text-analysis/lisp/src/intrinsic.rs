@@ -30,7 +30,16 @@ macro_rules! symbol {
 
 macro_rules! expect_number {
     ($arg:expr, $env:expr) => {
-        evaluate_node($arg, $env).token.value.parse::<i32>().expect("Invalid number")
+        {
+            let arg = evaluate_node($arg, $env);
+            assert_eq!(
+                arg.token.kind,
+                TokenKind::Number,
+                "Expected a number, but got: {}",
+                arg.token.value
+            );
+            arg.token.value.parse::<i32>().expect("Invalid number")
+        }
     };
 }
 
@@ -231,14 +240,10 @@ pub fn fn_or(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_repeat(args: &[Node], env: &mut Environment) -> Node {
-    (0..evaluate_node(&args[0], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number"))
-        .for_each(|_| {
-            evaluate_node(&args[1], env);
-        });
+    let n = expect_number!(&args[0], env);
+    (0..n).for_each(|_| {
+        evaluate_node(&args[1], env);
+    });
 
     symbol!("true")
 }
@@ -400,18 +405,7 @@ pub fn fn_cond(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_less_than(args: &[Node], env: &mut Environment) -> Node {
-    let a = evaluate_node(&args[0], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
-    let b = evaluate_node(&args[1], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
-
-    if a < b {
+    if expect_number!(&args[0], env) < expect_number!(&args[1], env) {
         symbol!("true")
     } else {
         symbol!("false")
@@ -419,18 +413,7 @@ pub fn fn_less_than(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_greater_than(args: &[Node], env: &mut Environment) -> Node {
-    let a = evaluate_node(&args[0], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
-    let b = evaluate_node(&args[1], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
-
-    if a > b {
+    if expect_number!(&args[0], env) > expect_number!(&args[1], env) {
         symbol!("true")
     } else {
         symbol!("false")
@@ -588,13 +571,7 @@ pub fn fn_false() -> Node {
 }
 
 pub fn fn_is_even(args: &[Node], env: &mut Environment) -> Node {
-    let number = evaluate_node(&args[0], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
-
-    if number % 2 == 0 {
+    if expect_number!(&args[0], env) % 2 == 0 {
         symbol!("true")
     } else {
         symbol!("false")
@@ -602,13 +579,7 @@ pub fn fn_is_even(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_is_odd(args: &[Node], env: &mut Environment) -> Node {
-    let number = evaluate_node(&args[0], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
-
-    if number % 2 != 0 {
+    if expect_number!(&args[0], env) % 2 != 0 {
         symbol!("true")
     } else {
         symbol!("false")
@@ -712,21 +683,13 @@ pub fn fn_url_decode(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_sleep(args: &[Node], env: &mut Environment) -> Node {
-    let duration = evaluate_node(&args[0], env)
-        .token
-        .value
-        .parse::<u64>()
-        .expect("Invalid number");
+    let duration = expect_number!(&args[0], env);
     std::thread::sleep(std::time::Duration::from_secs(duration));
     symbol!("true")
 }
 
 pub fn fn_sleep_ms(args: &[Node], env: &mut Environment) -> Node {
-    let duration = evaluate_node(&args[0], env)
-        .token
-        .value
-        .parse::<u64>()
-        .expect("Invalid number");
+    let duration = expect_number!(&args[0], env);
     std::thread::sleep(std::time::Duration::from_millis(duration));
     symbol!("true")
 }

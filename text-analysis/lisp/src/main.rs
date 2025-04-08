@@ -24,7 +24,7 @@ impl fmt::Display for Range {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 enum TokenKind {
     Text,
     Number,
