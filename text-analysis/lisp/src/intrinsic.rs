@@ -682,7 +682,7 @@ pub fn fn_last(args: &[Node], env: &mut Environment) -> Node {
     if list.children.is_empty() {
         symbol!("nil")
     } else {
-        list.children.last().unwrap().clone()
+        list.children.last().expect("Last element not found").clone()
     }
 }
 
@@ -737,7 +737,7 @@ pub fn fn_url_encode(args: &[Node], env: &mut Environment) -> Node {
 pub fn fn_url_decode(args: &[Node], env: &mut Environment) -> Node {
     let input = evaluate_node(&args[0], env).token.value;
     let decoded = url::form_urlencoded::parse(input.as_bytes())
-        .map(|(key, value)| format!("{}={}", key, value))
+        .map(|(key, value)| format!("{key}={value}"))
         .collect::<Vec<_>>()
         .join("&");
 
@@ -751,8 +751,8 @@ pub fn fn_url_decode(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
-pub fn fn_sleep(args: &[Node], _env: &mut Environment) -> Node {
-    let duration = evaluate_node(&args[0], _env)
+pub fn fn_sleep(args: &[Node], env: &mut Environment) -> Node {
+    let duration = evaluate_node(&args[0], env)
         .token
         .value
         .parse::<u64>()
@@ -761,8 +761,8 @@ pub fn fn_sleep(args: &[Node], _env: &mut Environment) -> Node {
     symbol!("true")
 }
 
-pub fn fn_sleep_ms(args: &[Node], _env: &mut Environment) -> Node {
-    let duration = evaluate_node(&args[0], _env)
+pub fn fn_sleep_ms(args: &[Node], env: &mut Environment) -> Node {
+    let duration = evaluate_node(&args[0], env)
         .token
         .value
         .parse::<u64>()

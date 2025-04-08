@@ -143,11 +143,9 @@ impl Environment {
 
 fn process_file(filename: &str, env: &mut Environment, script: bool, print_tokens: bool, print_ast: bool) {
     let mut source = fs::read_to_string(filename).expect("Unable to read file");
-    if script {
-        if source.starts_with("#!") {
-            if let Some(new_line_index) = source.find('\n') {
-                source = source[new_line_index + 1..].to_string();
-            }
+    if script && source.starts_with("#!") {
+        if let Some(new_line_index) = source.find('\n') {
+            source = source[new_line_index + 1..].to_string();
         }
     }
 
@@ -155,13 +153,12 @@ fn process_file(filename: &str, env: &mut Environment, script: bool, print_token
     if print_tokens {
         println!("\n{GREY}Tokens:{NORMAL}");
         for token in &tokens {
-            println!("{CYAN}{}{NORMAL}", token);
+            println!("{CYAN}{token}{NORMAL}");
         }
     }
     let ast = parse_tokens(&tokens);
     if print_ast {
-        println!("\n{GREY}AST:{NORMAL}");
-        println!("{}", ast);
+        println!("\n{GREY}AST:{NORMAL}\n{ast}");
     }
     evaluate_node(&ast, env);
 }
@@ -227,13 +224,13 @@ fn main() {
             if print_tokens {
                 println!("\n{GREY}Tokens:{NORMAL}");
                 for token in &tokens {
-                    println!("{}", token);
+                    println!("{token}");
                 }
             }
             let ast = parse_tokens(&tokens);
             if print_ast {
                 println!("\n{GREY}AST:{NORMAL}");
-                println!("{CYAN}{}{NORMAL}", ast);
+                println!("{CYAN}{ast}{NORMAL}");
             }
 
             evaluate_node(&ast, &mut env);
@@ -241,7 +238,6 @@ fn main() {
     } else {
         for arg in positional_args {
             process_file(&arg, &mut env, script, print_tokens, print_ast);
-            return;
         }
     }
 }

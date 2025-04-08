@@ -86,8 +86,7 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
         "filter" => intrinsic::fn_filter(args, env),
 
         // Lists
-        "list" => intrinsic::fn_list(args, env),
-        "'" => intrinsic::fn_list(args, env),
+        "list" | "'" => intrinsic::fn_list(args, env),
         "head" => intrinsic::fn_head(args, env),
         "last" => intrinsic::fn_last(args, env),
         "tail" => intrinsic::fn_tail(args, env),
