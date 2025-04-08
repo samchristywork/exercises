@@ -342,7 +342,7 @@ pub fn fn_read_file(args: &[Node], env: &mut Environment) -> Node {
 
 pub fn fn_join(args: &[Node], env: &mut Environment) -> Node {
     let separator = evaluate_node(&args[0], env).token.value;
-    let strings = evaluate_args!(&args[1..], env)
+    let strings = evaluate_args!(&args[1].children, env)
         .iter()
         .map(|arg| arg.token.value.clone())
         .collect::<Vec<_>>()
