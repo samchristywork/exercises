@@ -28,6 +28,12 @@ macro_rules! symbol {
     };
 }
 
+macro_rules! expect_number {
+    ($arg:expr, $env:expr) => {
+        evaluate_node($arg, $env).token.value.parse::<i32>().expect("Invalid number")
+    };
+}
+
 pub fn fn_add(args: &[Node], env: &mut Environment) -> Node {
     Node {
         token: Token {
@@ -83,16 +89,8 @@ pub fn fn_mul(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_pow(args: &[Node], env: &mut Environment) -> Node {
-    let base = evaluate_node(&args[0], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
-    let exponent = evaluate_node(&args[1], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
+    let base = expect_number!(&args[0], env);
+    let exponent = expect_number!(&args[1], env);
 
     Node {
         token: Token {
@@ -105,16 +103,8 @@ pub fn fn_pow(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_mod(args: &[Node], env: &mut Environment) -> Node {
-    let dividend = evaluate_node(&args[0], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
-    let divisor = evaluate_node(&args[1], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
+    let dividend = expect_number!(&args[0], env);
+    let divisor = expect_number!(&args[1], env);
 
     Node {
         token: Token {
@@ -127,12 +117,7 @@ pub fn fn_mod(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_inc(args: &[Node], env: &mut Environment) -> Node {
-    let n = evaluate_node(&args[0], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
-
+    let n = expect_number!(&args[0], env);
     Node {
         token: Token {
             value: (n + 1).to_string(),
@@ -144,12 +129,7 @@ pub fn fn_inc(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_dec(args: &[Node], env: &mut Environment) -> Node {
-    let n = evaluate_node(&args[0], env)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
-
+    let n = expect_number!(&args[0], env);
     Node {
         token: Token {
             value: (n - 1).to_string(),
