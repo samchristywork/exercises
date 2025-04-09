@@ -88,6 +88,14 @@ macro_rules! expect_list {
     };
 }
 
+macro_rules! expect_n_args {
+    ($args:expr, $n:expr) => {
+        if $args.len() != $n {
+            panic!("Expected {} arguments, but got {}", $n, $args.len());
+        }
+    };
+}
+
 pub fn fn_add(args: &[Node], env: &mut Environment) -> Node {
     Node {
         token: Token {
@@ -143,6 +151,8 @@ pub fn fn_mul(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_pow(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
     let base = expect_number!(&args[0], env);
     let exponent = expect_number!(&args[1], env);
 
@@ -157,6 +167,8 @@ pub fn fn_pow(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_mod(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
     let dividend = expect_number!(&args[0], env);
     let divisor = expect_number!(&args[1], env);
 
@@ -171,6 +183,8 @@ pub fn fn_mod(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_inc(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let n = expect_number!(&args[0], env);
     Node {
         token: Token {
@@ -183,6 +197,8 @@ pub fn fn_inc(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_dec(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let n = expect_number!(&args[0], env);
     Node {
         token: Token {
@@ -239,33 +255,39 @@ macro_rules! is_type {
 }
 
 pub fn fn_is_text(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
     is_type!(&args[0], env, TokenKind::Text)
 }
 
 pub fn fn_is_number(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
     is_type!(&args[0], env, TokenKind::Number)
 }
 
 pub fn fn_is_symbol(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
     is_type!(&args[0], env, TokenKind::Symbol)
 }
 
 pub fn fn_is_lparen(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
     is_type!(&args[0], env, TokenKind::LParen)
 }
 
 pub fn fn_is_lambda(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
     is_type!(&args[0], env, TokenKind::Lambda)
 }
 
 pub fn fn_is_atom(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
     is_type!(&args[0], env, TokenKind::Atom)
 }
 
 pub fn fn_and(args: &[Node], env: &mut Environment) -> Node {
     if args
         .iter()
-        .all(|arg| evaluate_node(arg, env).token.value == "true")
+        .all(|arg| expect_symbol!(&arg, env).token.value == "true")
     {
         symbol!("true")
     } else {
@@ -285,15 +307,17 @@ pub fn fn_or(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_repeat(args: &[Node], env: &mut Environment) -> Node {
-    let n = expect_number!(&args[0], env);
-    (0..n).for_each(|_| {
-        evaluate_node(&args[1], env);
-    });
+    expect_n_args!(args, 2);
 
-    symbol!("true")
+    let n = expect_number!(&args[0], env);
+    (0..n).fold(symbol!("false"), |_, _| {
+        evaluate_node(&args[1], env)
+    })
 }
 
 pub fn fn_loop(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     loop {
         evaluate_node(&args[0], env);
     }
@@ -328,6 +352,8 @@ pub fn fn_write_stderr(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_write_file(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
     let filename = expect_text!(&args[0], env);
     let content = expect_text!(&args[1], env);
 
@@ -337,6 +363,8 @@ pub fn fn_write_file(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_read_file(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let filename = expect_text!(&args[0], env);
     let content = std::fs::read_to_string(filename).expect("Unable to read file");
 
@@ -351,6 +379,8 @@ pub fn fn_read_file(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_join(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
     let separator = expect_text!(&args[0], env);
     let strings = evaluate_args!(&args[1].children, env)
         .iter()
@@ -369,6 +399,8 @@ pub fn fn_join(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_split(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
     let separator = expect_text!(&args[0], env);
     let string = expect_text!(&args[1], env);
 
@@ -394,6 +426,8 @@ pub fn fn_split(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_empty_string(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let arg = expect_text!(&args[0], env);
     if arg.is_empty() {
         symbol!("true")
@@ -419,6 +453,8 @@ pub fn fn_print_env(args: &[Node], env: &Environment) -> Node {
 }
 
 pub fn fn_equal(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
     let a = evaluate_node(&args[0], env);
     let b = evaluate_node(&args[1], env);
 
@@ -430,6 +466,8 @@ pub fn fn_equal(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_if(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 3);
+
     if expect_symbol!(&args[0], env).token.value == "true" {
         return evaluate_node(&args[1], env);
     }
@@ -450,6 +488,8 @@ pub fn fn_cond(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_less_than(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
     if expect_number!(&args[0], env) < expect_number!(&args[1], env) {
         symbol!("true")
     } else {
@@ -458,6 +498,8 @@ pub fn fn_less_than(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_greater_than(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
     if expect_number!(&args[0], env) > expect_number!(&args[1], env) {
         symbol!("true")
     } else {
@@ -466,7 +508,9 @@ pub fn fn_greater_than(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_def(args: &[Node], env: &mut Environment) -> Node {
-    let name = expect_symbol!(&args[0], env).token.value;
+    expect_n_args!(args, 2);
+
+    let name = &args[0].token.value;
     let value = evaluate_node(&args[1], env);
     env.set(name.clone(), value);
 
@@ -484,7 +528,7 @@ fn look_for_bang(children: &[Node]) -> bool {
 }
 
 pub fn fn_func(args: &[Node], env: &mut Environment) -> Node {
-    let name = expect_symbol!(&args[0], env).token.value;
+    let name = &args[0].token.value;
     let params = args[1].clone();
     let body = args[2..].to_vec();
     let mut children = vec![params];
@@ -510,7 +554,9 @@ pub fn fn_func(args: &[Node], env: &mut Environment) -> Node {
     symbol!("true")
 }
 
-pub fn fn_read_line() -> Node {
+pub fn fn_read_line(args: &[Node]) -> Node {
+    expect_n_args!(args, 0);
+
     let mut input = String::new();
     std::io::stdin()
         .read_line(&mut input)
@@ -539,6 +585,8 @@ pub fn fn_list(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_map(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
     let function = &args[0];
     let list = &args[1];
 
@@ -605,15 +653,19 @@ pub fn fn_filter(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
-pub fn fn_true() -> Node {
+pub fn fn_true(args: &[Node]) -> Node {
+    expect_n_args!(args, 0);
     symbol!("true")
 }
 
-pub fn fn_false() -> Node {
+pub fn fn_false(args: &[Node]) -> Node {
+    expect_n_args!(args, 0);
     symbol!("false")
 }
 
 pub fn fn_is_even(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     if expect_number!(&args[0], env) % 2 == 0 {
         symbol!("true")
     } else {
@@ -622,6 +674,8 @@ pub fn fn_is_even(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_is_odd(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     if expect_number!(&args[0], env) % 2 != 0 {
         symbol!("true")
     } else {
@@ -630,6 +684,8 @@ pub fn fn_is_odd(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_get_environment_variable(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let var_name = expect_text!(&args[0], env);
     let value = std::env::var(var_name).unwrap_or_else(|_| String::from("nil"));
     Node {
@@ -643,6 +699,8 @@ pub fn fn_get_environment_variable(args: &[Node], env: &mut Environment) -> Node
 }
 
 pub fn fn_head(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let list = expect_list!(&args[0], env);
     if list.is_empty() {
         panic!("Empty list");
@@ -652,6 +710,8 @@ pub fn fn_head(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_last(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let list = expect_list!(&args[0], env);
     if list.is_empty() {
         panic!("Empty list");
@@ -661,6 +721,8 @@ pub fn fn_last(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_tail(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let list = expect_list!(&args[0], env);
     if list.is_empty() {
         panic!("Empty list");
@@ -677,6 +739,8 @@ pub fn fn_tail(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_length(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let list = expect_list!(&args[0], env);
     Node {
         token: Token {
@@ -695,6 +759,8 @@ pub fn fn_load(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_url_encode(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let input = expect_text!(&args[0], env);
     let encoded = url::form_urlencoded::byte_serialize(input.as_bytes()).collect::<String>();
 
@@ -709,6 +775,8 @@ pub fn fn_url_encode(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_url_decode(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let input = expect_text!(&args[0], env);
     let decoded = url::form_urlencoded::parse(input.as_bytes())
         .map(|(key, value)| format!("{key}={value}"))
@@ -726,13 +794,17 @@ pub fn fn_url_decode(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_sleep(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let duration = expect_number!(&args[0], env);
-    std::thread::sleep(std::time::Duration::from_secs(duration));
+    std::thread::sleep(std::time::Duration::from_secs(duration.try_into().expect("Invalid duration")));
     symbol!("true")
 }
 
 pub fn fn_sleep_ms(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
     let duration = expect_number!(&args[0], env);
-    std::thread::sleep(std::time::Duration::from_millis(duration));
+    std::thread::sleep(std::time::Duration::from_millis(duration.try_into().expect("Invalid duration")));
     symbol!("true")
 }

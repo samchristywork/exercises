@@ -59,14 +59,14 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
         "cond" => intrinsic::fn_cond(args, env),
         "repeat" => intrinsic::fn_repeat(args, env),
         "loop" => intrinsic::fn_loop(args, env),
-        "true" => intrinsic::fn_true(),
-        "false" => intrinsic::fn_false(),
+        "true" => intrinsic::fn_true(args),
+        "false" => intrinsic::fn_false(args),
 
         // I/O
         "write!" => intrinsic::fn_write(args, env),
         "write-stderr!" => intrinsic::fn_write_stderr(args, env),
         "write-file!" => intrinsic::fn_write_file(args, env),
-        "read-line!" => intrinsic::fn_read_line(),
+        "read-line!" => intrinsic::fn_read_line(args),
         "read-file!" => intrinsic::fn_read_file(args, env),
 
         // Strings
@@ -122,7 +122,7 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
                 new_env.set(param.token.value.clone(), evaluate_node(arg, env));
             }
 
-            let mut return_value = intrinsic::fn_true();
+            let mut return_value = intrinsic::fn_true(&[]);
             for child in body {
                 return_value = evaluate_node(child, &mut new_env);
             }
@@ -132,6 +132,6 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
         TokenKind::LParen => {
             apply_function(&function.children[0].clone(), &function.children[1..], env)
         }
-        _ => panic!("Invalid function application: {}", function.token.value),
+        _ => panic!("Invalid function application: {}", function.token),
     }
 }
