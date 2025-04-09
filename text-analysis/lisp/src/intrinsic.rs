@@ -475,20 +475,37 @@ pub fn fn_empty_string(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
-pub fn fn_print_env(args: &[Node], env: &Environment) -> Node {
-    if args.is_empty() {
-        env.variables.iter().for_each(|(key, value)| {
-            println!("{}: {}", key, value.string());
-        });
-    } else {
-        env.variables.iter().for_each(|(key, value)| {
-            if key == &args[0].token.value {
-                println!("{}: {}", key, value.string());
-            }
-        });
-    }
+pub fn fn_print_env(args: &[Node], env: &mut Environment) -> Node {
+    let red = "\x1b[31m";
+    let normal = "\x1b[0m";
+    print!("{red}");
+    env.variables.iter().for_each(|(key, value)| {
+        println!("{}: {}", key, value.string());
+    });
+    println!("{normal}");
 
     symbol!("true")
+}
+
+pub fn test_equal(a: &Node, b: &Node) -> bool {
+    if a.token.kind != b.token.kind {
+        return false;
+    }
+
+    if a.token.kind == TokenKind::LParen {
+        if a.children.len() != b.children.len() {
+            return false;
+        }
+        for (a_child, b_child) in a.children.iter().zip(&b.children) {
+            if !test_equal(a_child, b_child) {
+                return false;
+            }
+        }
+    } else if a.token.value != b.token.value {
+        return false;
+    }
+
+    true
 }
 
 pub fn fn_equal(args: &[Node], env: &mut Environment) -> Node {
@@ -497,7 +514,7 @@ pub fn fn_equal(args: &[Node], env: &mut Environment) -> Node {
     let a = evaluate_node(&args[0], env);
     let b = evaluate_node(&args[1], env);
 
-    if a.token.value == b.token.value {
+    if test_equal(&a, &b) {
         symbol!("true")
     } else {
         symbol!("false")
