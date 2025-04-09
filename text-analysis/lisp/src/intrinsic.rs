@@ -58,6 +58,21 @@ macro_rules! expect_text {
     };
 }
 
+macro_rules! expect_symbol {
+    ($arg:expr, $env:expr) => {
+        {
+            let arg = evaluate_node($arg, $env);
+            assert_eq!(
+                arg.token.kind,
+                TokenKind::Symbol,
+                "Expected a symbol, but got: {}",
+                arg.token.value
+            );
+            arg
+        }
+    };
+}
+
 pub fn fn_add(args: &[Node], env: &mut Environment) -> Node {
     Node {
         token: Token {
@@ -400,7 +415,7 @@ pub fn fn_equal(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_if(args: &[Node], env: &mut Environment) -> Node {
-    if evaluate_node(&args[0], env).token.value == "true" {
+    if expect_symbol!(&args[0], env).token.value == "true" {
         return evaluate_node(&args[1], env);
     }
 
@@ -410,7 +425,7 @@ pub fn fn_if(args: &[Node], env: &mut Environment) -> Node {
 pub fn fn_cond(args: &[Node], env: &mut Environment) -> Node {
     args.iter()
         .find_map(|arg| {
-            if evaluate_node(&arg.children[0], env).token.value == "true" {
+            if expect_symbol!(&arg.children[0], env).token.value == "true" {
                 Some(evaluate_node(&arg.children[1], env))
             } else {
                 None
@@ -436,7 +451,7 @@ pub fn fn_greater_than(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_def(args: &[Node], env: &mut Environment) -> Node {
-    let name = &args[0].token.value;
+    let name = expect_symbol!(&args[0], env).token.value;
     let value = evaluate_node(&args[1], env);
     env.set(name.clone(), value);
 
@@ -454,17 +469,15 @@ fn look_for_bang(children: &[Node]) -> bool {
 }
 
 pub fn fn_func(args: &[Node], env: &mut Environment) -> Node {
-    let name = &args[0].token.value;
+    let name = expect_symbol!(&args[0], env).token.value;
     let params = args[1].clone();
     let body = args[2..].to_vec();
     let mut children = vec![params];
     children.extend(body);
 
-    let name_ends_with_bang = name.ends_with('!');
-    let at_least_one_child_identifier_ends_with_bang = look_for_bang(&children);
     assert_eq!(
-        name_ends_with_bang,
-        at_least_one_child_identifier_ends_with_bang,
+        name.ends_with('!'),
+        look_for_bang(&children),
         "Function name and child identifiers must match the bang convention",
     );
 
