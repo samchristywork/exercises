@@ -72,6 +72,8 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
         // Strings
         "join" => intrinsic::fn_join(args, env),
         "split" => intrinsic::fn_split(args, env),
+        "lines" => intrinsic::fn_lines(args, env),
+        "strlen" => intrinsic::fn_strlen(args, env),
         "empty-string?" => intrinsic::fn_empty_string(args, env),
 
         // Environment

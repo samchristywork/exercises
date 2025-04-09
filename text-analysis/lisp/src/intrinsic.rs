@@ -425,6 +425,45 @@ pub fn fn_split(args: &[Node], env: &mut Environment) -> Node {
     }
 }
 
+pub fn fn_lines(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
+    let string = expect_text!(&args[0], env);
+    let lines = string.lines().map(|s| {
+        Node {
+            token: Token {
+                value: s.to_string(),
+                kind: TokenKind::Text,
+                range: Range { start: 0, end: 0 },
+            },
+            children: Vec::new(),
+        }
+    });
+
+    Node {
+        token: Token {
+            value: String::from("lines"),
+            kind: TokenKind::LParen,
+            range: Range { start: 0, end: 0 },
+        },
+        children: lines.collect(),
+    }
+}
+
+pub fn fn_strlen(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
+    let string = expect_text!(&args[0], env);
+    Node {
+        token: Token {
+            value: string.len().to_string(),
+            kind: TokenKind::Number,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
 pub fn fn_empty_string(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
