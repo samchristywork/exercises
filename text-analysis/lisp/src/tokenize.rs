@@ -72,23 +72,6 @@ pub fn tokenize(source: &str) -> Vec<Token> {
                     range: Range { start, end },
                 });
             }
-            c if is_symbol_char(c) => {
-                let mut value = String::from(c);
-                while let Some(&(next_start, next_c)) = chars.peek() {
-                    if is_symbol_char(next_c) {
-                        value.push(next_c);
-                        chars.next();
-                        end = next_start;
-                    } else {
-                        break;
-                    }
-                }
-                tokens.push(Token {
-                    value,
-                    kind: TokenKind::Symbol,
-                    range: Range { start, end },
-                });
-            }
             ':' => {
                 let mut value = String::from(c);
                 while let Some(&(next_start, next_c)) = chars.peek() {
@@ -103,6 +86,23 @@ pub fn tokenize(source: &str) -> Vec<Token> {
                 tokens.push(Token {
                     value,
                     kind: TokenKind::Atom,
+                    range: Range { start, end },
+                });
+            }
+            c if is_symbol_char(c) => {
+                let mut value = String::from(c);
+                while let Some(&(next_start, next_c)) = chars.peek() {
+                    if is_symbol_char(next_c) {
+                        value.push(next_c);
+                        chars.next();
+                        end = next_start;
+                    } else {
+                        break;
+                    }
+                }
+                tokens.push(Token {
+                    value,
+                    kind: TokenKind::Symbol,
                     range: Range { start, end },
                 });
             }
