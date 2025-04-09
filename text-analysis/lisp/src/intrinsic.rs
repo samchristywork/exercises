@@ -73,6 +73,21 @@ macro_rules! expect_symbol {
     };
 }
 
+macro_rules! expect_list {
+    ($arg:expr, $env:expr) => {
+        {
+            let arg = evaluate_node($arg, $env);
+            assert_eq!(
+                arg.token.kind,
+                TokenKind::LParen,
+                "Expected a list, but got: {}",
+                arg.token.value
+            );
+            arg.children.clone()
+        }
+    };
+}
+
 pub fn fn_add(args: &[Node], env: &mut Environment) -> Node {
     Node {
         token: Token {
@@ -628,27 +643,27 @@ pub fn fn_get_environment_variable(args: &[Node], env: &mut Environment) -> Node
 }
 
 pub fn fn_head(args: &[Node], env: &mut Environment) -> Node {
-    let list = evaluate_node(&args[0], env);
-    if list.children.is_empty() {
-        symbol!("nil")
+    let list = expect_list!(&args[0], env);
+    if list.is_empty() {
+        panic!("Empty list");
     } else {
-        list.children[0].clone()
+        list[0].clone()
     }
 }
 
 pub fn fn_last(args: &[Node], env: &mut Environment) -> Node {
-    let list = evaluate_node(&args[0], env);
-    if list.children.is_empty() {
-        symbol!("nil")
+    let list = expect_list!(&args[0], env);
+    if list.is_empty() {
+        panic!("Empty list");
     } else {
-        list.children.last().expect("Last element not found").clone()
+        list[list.len() - 1].clone()
     }
 }
 
 pub fn fn_tail(args: &[Node], env: &mut Environment) -> Node {
-    let list = evaluate_node(&args[0], env);
-    if list.children.is_empty() {
-        symbol!("nil")
+    let list = expect_list!(&args[0], env);
+    if list.is_empty() {
+        panic!("Empty list");
     } else {
         Node {
             token: Token {
@@ -656,16 +671,16 @@ pub fn fn_tail(args: &[Node], env: &mut Environment) -> Node {
                 kind: TokenKind::LParen,
                 range: Range { start: 0, end: 0 },
             },
-            children: list.children[1..].to_vec(),
+            children: list[1..].to_vec(),
         }
     }
 }
 
 pub fn fn_length(args: &[Node], env: &mut Environment) -> Node {
-    let list = evaluate_node(&args[0], env);
+    let list = expect_list!(&args[0], env);
     Node {
         token: Token {
-            value: list.children.len().to_string(),
+            value: list.len().to_string(),
             kind: TokenKind::Number,
             range: Range { start: 0, end: 0 },
         },
