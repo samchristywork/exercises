@@ -110,6 +110,8 @@ pub fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> N
         "sleep" => intrinsic::fn_sleep(args, env),
         "sleep-ms" => intrinsic::fn_sleep_ms(args, env),
         "time-ms" => intrinsic::fn_time_ms(args, env),
+        "system!" => intrinsic::fn_system(args, env),
+        "contains" => intrinsic::fn_contains(args, env),
         _ => env.get(&function.token.value).map_or_else(
             || panic!("Unknown function: {}", function.token.value),
             std::clone::Clone::clone,

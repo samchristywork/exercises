@@ -974,3 +974,83 @@ pub fn fn_exit(args: &[Node], env: &mut Environment) -> Node {
     let exit_code = expect_number!(&args[0], env);
     std::process::exit(exit_code);
 }
+
+use std::io::Write;
+pub fn fn_system(args: &[Node], env: &mut Environment) -> Node {
+    if args.is_empty() {
+        panic!("No command provided");
+    }
+
+    let arguments = if args.len() > 1 {
+        expect_list!(&args[1], env)
+    } else {
+        Vec::new()
+    };
+
+    let stdin_string = if args.len() > 2 {
+        expect_text!(&args[2], env)
+    } else {
+        String::new()
+    };
+
+    let mut child = std::process::Command::new(expect_text!(&args[0], env))
+        .args(arguments.iter().map(|arg| arg.token.value.clone()))
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .expect("Failed to start process");
+
+    {
+        let mut stdin = child.stdin.take().expect("Failed to open stdin");
+        stdin.write_all(stdin_string.as_bytes()).expect("Failed to write to stdin");
+    }
+
+    let output = child.wait_with_output().expect("Failed to read stdout/stderr");
+
+    Node {
+        token: Token {
+            value: String::from("system"),
+            kind: TokenKind::LParen,
+            range: Range { start: 0, end: 0 },
+        },
+        children: vec![
+            Node {
+                token: Token {
+                    value: output.status.code().unwrap_or(-1).to_string(),
+                    kind: TokenKind::Number,
+                    range: Range { start: 0, end: 0 },
+                },
+                children: Vec::new(),
+            },
+            Node {
+                token: Token {
+                    value: String::from_utf8_lossy(&output.stdout).to_string(),
+                    kind: TokenKind::Text,
+                    range: Range { start: 0, end: 0 },
+                },
+                children: Vec::new(),
+            },
+            Node {
+                token: Token {
+                    value: String::from_utf8_lossy(&output.stderr).to_string(),
+                    kind: TokenKind::Text,
+                    range: Range { start: 0, end: 0 },
+                },
+                children: Vec::new(),
+            }],
+    }
+}
+
+pub fn fn_contains(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
+    let item = evaluate_node(&args[0], env);
+    let list = expect_list!(&args[1], env);
+
+    if list.iter().any(|x| test_equal(x, &item)) {
+        symbol!("true")
+    } else {
+        symbol!("false")
+    }
+}
