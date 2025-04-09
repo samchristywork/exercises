@@ -82,6 +82,7 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
         // Assignment
         "def!" => intrinsic::fn_def(args, env),
         "func!" => intrinsic::fn_func(args, env),
+        "set" => intrinsic::fn_set(args, env),
 
         // Higher-order functions
         "map" => intrinsic::fn_map(args, env),
@@ -93,6 +94,7 @@ fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node 
         "last" => intrinsic::fn_last(args, env),
         "tail" => intrinsic::fn_tail(args, env),
         "length" => intrinsic::fn_length(args, env),
+        "reverse" => intrinsic::fn_reverse(args, env),
 
         // Miscellaneous
         "get-environment-variable!" => intrinsic::fn_get_environment_variable(args, env),

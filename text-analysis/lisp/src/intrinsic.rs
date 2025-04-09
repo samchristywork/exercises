@@ -610,6 +610,18 @@ pub fn fn_func(args: &[Node], env: &mut Environment) -> Node {
     symbol!("true")
 }
 
+pub fn fn_set(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 3);
+
+    let name = &args[0].token.value;
+    let value = evaluate_node(&args[1], env);
+    let body = &args[2];
+
+    let mut new_env = env.clone();
+    new_env.set(name.clone(), value);
+    evaluate_node(body, &mut new_env)
+}
+
 pub fn fn_read_line(args: &[Node]) -> Node {
     expect_n_args!(args, 0);
 
@@ -805,6 +817,20 @@ pub fn fn_length(args: &[Node], env: &mut Environment) -> Node {
             range: Range { start: 0, end: 0 },
         },
         children: Vec::new(),
+    }
+}
+
+pub fn fn_reverse(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
+    let list = expect_list!(&args[0], env);
+    Node {
+        token: Token {
+            value: String::from("reverse"),
+            kind: TokenKind::LParen,
+            range: Range { start: 0, end: 0 },
+        },
+        children: list.iter().rev().cloned().collect(),
     }
 }
 
