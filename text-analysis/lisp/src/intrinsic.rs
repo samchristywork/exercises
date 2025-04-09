@@ -4,6 +4,7 @@ use crate::Range;
 use crate::Token;
 use crate::TokenKind;
 use crate::evaluate_node;
+use crate::handle_symbol;
 use crate::process_file;
 
 macro_rules! evaluate_args {
@@ -685,31 +686,47 @@ pub fn fn_map(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_filter(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
     let function = &args[0];
     let list = &args[1];
 
-    let children = list
-        .children
-        .iter()
-        .filter_map(|item| {
-            let result = Node {
+
+    let mut children = Vec::new();
+    if env.get(&function.token.value.clone()).is_some() {
+        for item in evaluate_node(list, env).children {
+            let lambda = handle_symbol(&function, &item.children, env);
+
+            let lambda_params = &lambda.children[0];
+            let lambda_body = &lambda.children[1..];
+
+            let mut new_env = env.clone();
+            for param in lambda_params.children.iter() {
+                new_env.set(param.token.value.clone(), item.clone());
+            }
+
+            for child in lambda_body {
+                let ret = evaluate_node(child, &mut new_env);
+                if ret.token.value == "true" {
+                    children.push(item.clone());
+                }
+            }
+        }
+    } else {
+        for item in evaluate_node(list, env).children {
+            let ret = evaluate_node(&Node {
                 token: Token {
                     value: String::from("filter"),
                     kind: TokenKind::LParen,
                     range: Range { start: 0, end: 0 },
                 },
                 children: vec![function.clone(), item.clone()],
-            };
-            if evaluate_node(&result, env).token.value == "true" {
-                Some(item.clone())
-            } else {
-                None
+            }, env);
+            if ret.token.value == "true" {
+                children.push(item.clone());
             }
-        })
-        .collect::<Vec<_>>()
-        .iter()
-        .map(|child| evaluate_node(child, env))
-        .collect::<Vec<_>>();
+        }
+    }
 
     Node {
         token: Token {
@@ -889,4 +906,20 @@ pub fn fn_sleep_ms(args: &[Node], env: &mut Environment) -> Node {
     let duration = expect_number!(&args[0], env);
     std::thread::sleep(std::time::Duration::from_millis(duration.try_into().expect("Invalid duration")));
     symbol!("true")
+}
+
+pub fn fn_lambda(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 2);
+
+    let params = args[0].clone();
+    let body = args[1].clone();
+
+    Node {
+        token: Token {
+            value: String::from("lambda"),
+            kind: TokenKind::Lambda,
+            range: Range { start: 0, end: 0 },
+        },
+        children: vec![params, body],
+    }
 }
