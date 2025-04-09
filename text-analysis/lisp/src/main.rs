@@ -9,6 +9,7 @@ mod tokenize;
 use std::fmt;
 
 use crate::evaluate::evaluate_node;
+use crate::evaluate::handle_symbol;
 use crate::parse::parse_tokens;
 use crate::tokenize::tokenize;
 

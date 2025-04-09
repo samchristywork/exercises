@@ -61,6 +61,9 @@ pub fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> N
         "loop" => intrinsic::fn_loop(args, env),
         "true" => intrinsic::fn_true(args),
         "false" => intrinsic::fn_false(args),
+        "|" => intrinsic::fn_pipeline(args, env),
+        "rev|" => intrinsic::fn_reverse_pipeline(args, env),
+        "exit" => intrinsic::fn_exit(args, env), // TODO: Is ! needed?
 
         // I/O
         "write!" => intrinsic::fn_write(args, env),
@@ -106,6 +109,7 @@ pub fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> N
         "load!" => intrinsic::fn_load(args, env),
         "sleep" => intrinsic::fn_sleep(args, env),
         "sleep-ms" => intrinsic::fn_sleep_ms(args, env),
+        "time-ms" => intrinsic::fn_time_ms(args, env),
         _ => env.get(&function.token.value).map_or_else(
             || panic!("Unknown function: {}", function.token.value),
             std::clone::Clone::clone,

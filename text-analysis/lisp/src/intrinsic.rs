@@ -852,8 +852,10 @@ pub fn fn_reverse(args: &[Node], env: &mut Environment) -> Node {
 }
 
 pub fn fn_load(args: &[Node], env: &mut Environment) -> Node {
-    let filename = expect_text!(&args[0], env);
-    process_file(&filename, env, true, false, false);
+    args.iter().for_each(|arg| {
+        let filename = expect_text!(arg, env);
+        process_file(&filename, env, true, false, false);
+    });
     symbol!("true")
 }
 
@@ -908,6 +910,22 @@ pub fn fn_sleep_ms(args: &[Node], env: &mut Environment) -> Node {
     symbol!("true")
 }
 
+pub fn fn_time_ms(args: &[Node], env: &mut Environment) -> Node {
+    let start = std::time::Instant::now();
+    args.iter().for_each(|arg| {
+        evaluate_node(arg, env);
+    });
+
+    Node {
+        token: Token {
+            value: start.elapsed().as_millis().to_string(),
+            kind: TokenKind::Number,
+            range: Range { start: 0, end: 0 },
+        },
+        children: Vec::new(),
+    }
+}
+
 pub fn fn_lambda(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 2);
 
@@ -922,4 +940,37 @@ pub fn fn_lambda(args: &[Node], env: &mut Environment) -> Node {
         },
         children: vec![params, body],
     }
+}
+
+pub fn fn_pipeline(args: &[Node], env: &mut Environment) -> Node {
+    let mut root = args[args.len()-1].clone();
+
+    args.iter().rev()
+        .skip(1)
+        .fold(&mut root, |current, next_node| {
+            current.children.push(next_node.clone());
+            current.children.last_mut().unwrap()
+        });
+
+    evaluate_node(&root, env)
+}
+
+pub fn fn_reverse_pipeline(args: &[Node], env: &mut Environment) -> Node {
+    let mut root = args[0].clone();
+
+    args.iter()
+        .skip(1)
+        .fold(&mut root, |current, next_node| {
+            current.children.push(next_node.clone());
+            current.children.last_mut().unwrap()
+        });
+
+    evaluate_node(&root, env)
+}
+
+pub fn fn_exit(args: &[Node], env: &mut Environment) -> Node {
+    expect_n_args!(args, 1);
+
+    let exit_code = expect_number!(&args[0], env);
+    std::process::exit(exit_code);
 }
