@@ -70,33 +70,47 @@ impl fmt::Display for Token {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
+enum Value {
+    Text(String),
+    Number(i64),
+    Symbol(String),
+    LParen(),
+    Lambda(),
+    Atom(String),
+    Module(),
+}
+
 #[derive(Clone)]
 struct Node {
     token: Token,
+    value: Value,
     children: Vec<Node>,
 }
 
 fn print_tree(node: &Node, depth: usize) -> String {
-    let mut result = String::new();
+    let mut return_value = String::new();
+    let value = node.value.clone();
     for _ in 0..depth {
-        result.push_str("  ");
+        return_value.push_str("  ");
     }
-    if node.token.kind == TokenKind::Text {
-        result.push_str(&format!("\"{}\"", node.token.value));
-    } else {
-        result.push_str(&node.token.value);
-    }
-    result.push('\n');
+    return_value.push_str(&match value {
+        Value::Text(ref s) => format!("\"{}\"", s),
+        Value::Number(ref n) => format!("{}", n),
+        Value::Symbol(ref s) => format!("{}", s),
+        Value::LParen() => format!("("),
+        Value::Lambda() => format!("lambda"),
+        Value::Atom(ref s) => format!("{}", s),
+        _ => format!("{:?}", value),
+    });
+
+    return_value.push('\n');
+
     for child in &node.children {
-        result.push_str(&print_tree(child, depth + 1));
+        return_value.push_str(&print_tree(child, depth + 1));
     }
-    if node.token.kind == TokenKind::LParen {
-        for _ in 0..depth {
-            result.push_str("  ");
-        }
-        result.push_str(")\n");
-    }
-    result
+
+    return_value
 }
 
 impl fmt::Display for Node {
@@ -107,8 +121,8 @@ impl fmt::Display for Node {
 
 impl Node {
     fn string(&self) -> String {
-        match self.token.kind {
-            TokenKind::LParen => {
+        match self.value {
+            Value::LParen() => {
                 let mut result = String::new();
                 for child in &self.children {
                     result.push_str(&child.string());
@@ -116,7 +130,14 @@ impl Node {
                 }
                 result.trim_end().to_string()
             }
-            _ => self.token.value.clone(),
+            Value::Text(ref s) => s.clone(),
+            Value::Number(ref n) => n.to_string(),
+            Value::Symbol(ref s) => s.clone(),
+            Value::Lambda() => "lambda".to_string(),
+            Value::Atom(ref s) => s.clone(),
+            _ => {
+                panic!("Not Implemented");
+            }
         }
     }
 }
@@ -142,7 +163,13 @@ impl Environment {
     }
 }
 
-fn process_file(filename: &str, env: &mut Environment, script: bool, print_tokens: bool, print_ast: bool) {
+fn process_file(
+    filename: &str,
+    env: &mut Environment,
+    script: bool,
+    print_tokens: bool,
+    print_ast: bool,
+) {
     let mut source = fs::read_to_string(filename).expect("Unable to read file");
     if script && source.starts_with("#!") {
         if let Some(new_line_index) = source.find('\n') {
@@ -180,10 +207,13 @@ fn main() {
     let mut script = false;
     let mut print_tokens = false;
     let mut print_ast = false;
+    let mut command = false;
 
     for flag in &flags {
         if flag == "--repl" || flag == "-r" {
             repl = true;
+        } else if flag == "--command" || flag == "-c" {
+            command = true;
         } else if flag == "--script" || flag == "-s" {
             script = true;
         } else if flag == "--print-tokens" || flag == "-t" {
@@ -200,12 +230,17 @@ fn main() {
             println!("  -s, --script           Run the script");
             println!("  -t, --print-tokens     Print tokens");
             println!("  -a, --print-ast        Print AST");
+            println!("  -c, --command          Execute a command");
             println!("  -v, --version          Show version");
             println!("  -h, --help             Show this help message");
             return;
         } else {
             println!("Unknown flag: {flag}");
         }
+    }
+
+    if command {
+        println!("Command mode is not implemented yet.");
     }
 
     if repl {
@@ -218,8 +253,11 @@ fn main() {
                 .read_line(&mut input)
                 .expect("Failed to read line");
             let input = input.trim();
-            if input == "exit" || input.is_empty() {
+            if input == "exit" {
                 break;
+            }
+            if input.is_empty() {
+                continue;
             }
             let tokens = tokenize(input);
             if print_tokens {
