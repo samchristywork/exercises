@@ -1,8 +1,11 @@
+use std::io::Write;
+
 use crate::Environment;
 use crate::Node;
 use crate::Range;
 use crate::Token;
 use crate::TokenKind;
+use crate::Value;
 use crate::evaluate_node;
 use crate::handle_symbol;
 use crate::process_file;
@@ -16,79 +19,6 @@ macro_rules! evaluate_args {
     };
 }
 
-macro_rules! symbol {
-    ($value:expr) => {
-        Node {
-            token: Token {
-                value: $value.to_string(),
-                kind: TokenKind::Symbol,
-                range: Range { start: 0, end: 0 },
-            },
-            children: Vec::new(),
-        }
-    };
-}
-
-macro_rules! expect_number {
-    ($arg:expr, $env:expr) => {
-        {
-            let arg = evaluate_node($arg, $env);
-            assert_eq!(
-                arg.token.kind,
-                TokenKind::Number,
-                "Expected a number, but got: {}",
-                arg.token.value
-            );
-            arg.token.value.parse::<i32>().expect("Invalid number")
-        }
-    };
-}
-
-macro_rules! expect_text {
-    ($arg:expr, $env:expr) => {
-        {
-            let arg = evaluate_node($arg, $env);
-            assert_eq!(
-                arg.token.kind,
-                TokenKind::Text,
-                "Expected a text, but got: {}",
-                arg.token.value
-            );
-            arg.token.value.clone()
-        }
-    };
-}
-
-macro_rules! expect_symbol {
-    ($arg:expr, $env:expr) => {
-        {
-            let arg = evaluate_node($arg, $env);
-            assert_eq!(
-                arg.token.kind,
-                TokenKind::Symbol,
-                "Expected a symbol, but got: {}",
-                arg.token.value
-            );
-            arg
-        }
-    };
-}
-
-macro_rules! expect_list {
-    ($arg:expr, $env:expr) => {
-        {
-            let arg = evaluate_node($arg, $env);
-            assert_eq!(
-                arg.token.kind,
-                TokenKind::LParen,
-                "Expected a list, but got: {}",
-                arg.token.value
-            );
-            arg.children.clone()
-        }
-    };
-}
-
 macro_rules! expect_n_args {
     ($args:expr, $n:expr) => {
         if $args.len() != $n {
@@ -98,55 +28,59 @@ macro_rules! expect_n_args {
 }
 
 pub fn fn_add(args: &[Node], env: &mut Environment) -> Node {
+    let mut n = 0;
+
+    for arg in evaluate_args!(args, env) {
+        if let Value::Number(value) = arg.value {
+            n += value;
+        } else {
+            panic!("Invalid argument for addition function");
+        }
+    }
+
     Node {
-        token: Token {
-            value: evaluate_args!(args, env)
-                .iter()
-                .map(|arg| arg.token.value.parse::<i32>().expect("Invalid number"))
-                .sum::<i32>()
-                .to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
+        token: args[0].token.clone(),
+        value: Value::Number(n),
         children: Vec::new(),
     }
 }
 
 pub fn fn_sub(args: &[Node], env: &mut Environment) -> Node {
-    let mut remaining_args = evaluate_args!(args, env);
-    let first_arg = remaining_args
-        .remove(0)
-        .token
-        .value
-        .parse::<i32>()
-        .expect("Invalid number");
+    if let Value::Number(first_arg) = evaluate_node(&args[0], env).value {
+        let mut n = first_arg;
 
-    Node {
-        token: Token {
-            value: remaining_args
-                .into_iter()
-                .fold(first_arg, |acc, x| {
-                    acc - x.token.value.parse::<i32>().expect("Invalid number")
-                })
-                .to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+        for arg in args.iter().skip(1) {
+            if let Value::Number(value) = evaluate_node(arg, env).value {
+                n -= value;
+            } else {
+                panic!("Invalid argument for subtraction function");
+            }
+        }
+
+        return Node {
+            token: args[0].token.clone(),
+            value: Value::Number(n),
+            children: Vec::new(),
+        };
     }
+
+    panic!("Invalid arguments for subtraction function");
 }
 
 pub fn fn_mul(args: &[Node], env: &mut Environment) -> Node {
+    let mut n = 1;
+
+    for arg in evaluate_args!(args, env) {
+        if let Value::Number(value) = arg.value {
+            n *= value;
+        } else {
+            panic!("Invalid argument for multiplication function");
+        }
+    }
+
     Node {
-        token: Token {
-            value: evaluate_args!(args, env)
-                .iter()
-                .map(|arg| arg.token.value.parse::<i32>().expect("Invalid number"))
-                .product::<i32>()
-                .to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
+        token: args[0].token.clone(),
+        value: Value::Number(n),
         children: Vec::new(),
     }
 }
@@ -154,166 +88,201 @@ pub fn fn_mul(args: &[Node], env: &mut Environment) -> Node {
 pub fn fn_pow(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 2);
 
-    let base = expect_number!(&args[0], env);
-    let exponent = expect_number!(&args[1], env);
-
-    Node {
-        token: Token {
-            value: (base.pow(exponent.try_into().expect("Invalid exponent"))).to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+    if let Value::Number(base) = evaluate_node(&args[0], env).value {
+        if let Value::Number(exponent) = evaluate_node(&args[1], env).value {
+            return Node {
+                token: args[0].token.clone(),
+                value: Value::Number(base.pow(exponent.try_into().expect("Invalid exponent"))),
+                children: Vec::new(),
+            };
+        }
     }
+
+    panic!("Invalid arguments for power function");
 }
 
 pub fn fn_mod(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 2);
 
-    let dividend = expect_number!(&args[0], env);
-    let divisor = expect_number!(&args[1], env);
-
-    Node {
-        token: Token {
-            value: (dividend % divisor).to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+    if let Value::Number(dividend) = evaluate_node(&args[0], env).value {
+        if let Value::Number(divisor) = evaluate_node(&args[1], env).value {
+            return Node {
+                token: args[0].token.clone(),
+                value: Value::Number(dividend % divisor),
+                children: Vec::new(),
+            };
+        }
     }
+
+    panic!("Invalid arguments for modulo function");
 }
 
 pub fn fn_inc(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let n = expect_number!(&args[0], env);
-    Node {
-        token: Token {
-            value: (n + 1).to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+    if let Value::Number(n) = evaluate_node(&args[0], env).value {
+        return Node {
+            token: args[0].token.clone(),
+            value: Value::Number(n + 1),
+            children: Vec::new(),
+        };
     }
+
+    panic!("Invalid arguments for increment function");
 }
 
 pub fn fn_dec(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let n = expect_number!(&args[0], env);
-    Node {
-        token: Token {
-            value: (n - 1).to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+    if let Value::Number(n) = evaluate_node(&args[0], env).value {
+        return Node {
+            token: args[0].token.clone(),
+            value: Value::Number(n - 1),
+            children: Vec::new(),
+        };
     }
+
+    panic!("Invalid arguments for decrement function");
 }
 
 pub fn fn_max(args: &[Node], env: &mut Environment) -> Node {
+    if args.is_empty() {
+        panic!("No arguments provided for max function");
+    }
+
     let max_value = evaluate_args!(args, env)
         .iter()
-        .map(|arg| arg.token.value.parse::<i32>().expect("Invalid number"))
+        .map(|arg| {
+            if let Value::Number(value) = arg.value {
+                value
+            } else {
+                panic!("Invalid argument for max function");
+            }
+        })
         .max()
         .unwrap_or(0);
 
     Node {
-        token: Token {
-            value: max_value.to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
+        token: args[0].token.clone(),
+        value: Value::Number(max_value),
         children: Vec::new(),
     }
 }
 
 pub fn fn_min(args: &[Node], env: &mut Environment) -> Node {
+    if args.is_empty() {
+        panic!("No arguments provided for min function");
+    }
+
     let min_value = evaluate_args!(args, env)
         .iter()
-        .map(|arg| arg.token.value.parse::<i32>().expect("Invalid number"))
+        .map(|arg| {
+            if let Value::Number(value) = arg.value {
+                value
+            } else {
+                panic!("Invalid argument for min function");
+            }
+        })
         .min()
         .unwrap_or(0);
 
     Node {
-        token: Token {
-            value: min_value.to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
+        token: args[0].token.clone(),
+        value: Value::Number(min_value),
         children: Vec::new(),
     }
 }
 
-macro_rules! is_type {
-    ($arg:expr, $env:expr, $kind:expr) => {
-        if evaluate_node($arg, $env).token.kind == $kind {
-            symbol!("true")
-        } else {
-            symbol!("false")
-        }
-    };
-}
-
 pub fn fn_is_text(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
-    is_type!(&args[0], env, TokenKind::Text)
+    if let Value::Text(_) = evaluate_node(&args[0], env).value {
+        return fn_true(&[]);
+    } else {
+        return fn_false(&[]);
+    }
 }
 
 pub fn fn_is_number(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
-    is_type!(&args[0], env, TokenKind::Number)
+    if let Value::Number(_) = evaluate_node(&args[0], env).value {
+        return fn_true(&[]);
+    } else {
+        return fn_false(&[]);
+    }
 }
 
 pub fn fn_is_symbol(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
-    is_type!(&args[0], env, TokenKind::Symbol)
+    if let Value::Symbol(_) = evaluate_node(&args[0], env).value {
+        return fn_true(&[]);
+    } else {
+        return fn_false(&[]);
+    }
 }
 
 pub fn fn_is_lparen(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
-    is_type!(&args[0], env, TokenKind::LParen)
+    if let Value::LParen() = evaluate_node(&args[0], env).value {
+        return fn_true(&[]);
+    } else {
+        return fn_false(&[]);
+    }
 }
 
 pub fn fn_is_lambda(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
-    is_type!(&args[0], env, TokenKind::Lambda)
+    if let Value::Lambda() = evaluate_node(&args[0], env).value {
+        return fn_true(&[]);
+    } else {
+        return fn_false(&[]);
+    }
 }
 
 pub fn fn_is_atom(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
-    is_type!(&args[0], env, TokenKind::Atom)
+    if let Value::Atom(_) = evaluate_node(&args[0], env).value {
+        return fn_true(&[]);
+    } else {
+        return fn_false(&[]);
+    }
 }
 
 pub fn fn_and(args: &[Node], env: &mut Environment) -> Node {
-    if args
-        .iter()
-        .all(|arg| expect_symbol!(&arg, env).token.value == "true")
-    {
-        symbol!("true")
+    if args.iter().all(|arg| {
+        if let Value::Symbol(ref s) = evaluate_node(arg, env).value {
+            s == "true"
+        } else {
+            panic!("Invalid argument for and function");
+        }
+    }) {
+        fn_true(&[])
     } else {
-        symbol!("false")
+        fn_false(&[])
     }
 }
 
 pub fn fn_or(args: &[Node], env: &mut Environment) -> Node {
-    if args
-        .iter()
-        .any(|arg| evaluate_node(arg, env).token.value == "true")
-    {
-        symbol!("true")
+    if args.iter().any(|arg| {
+        if let Value::Symbol(ref s) = evaluate_node(arg, env).value {
+            s == "true"
+        } else {
+            panic!("Invalid argument for or function");
+        }
+    }) {
+        fn_true(&[])
     } else {
-        symbol!("false")
+        fn_false(&[])
     }
 }
 
 pub fn fn_repeat(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 2);
 
-    let n = expect_number!(&args[0], env);
-    (0..n).fold(symbol!("false"), |_, _| {
-        evaluate_node(&args[1], env)
-    })
+    if let Value::Number(n) = evaluate_node(&args[0], env).value {
+        (0..n).fold(fn_false(&[]), |_, _| evaluate_node(&args[1], env))
+    } else {
+        panic!("Invalid argument for repeat function");
+    }
 }
 
 pub fn fn_loop(args: &[Node], env: &mut Environment) -> Node {
@@ -335,7 +304,27 @@ pub fn fn_write(args: &[Node], env: &mut Environment) -> Node {
             .as_str()
     );
 
-    symbol!("true")
+    fn_true(&[])
+}
+
+pub fn fn_debug_write(args: &[Node], env: &mut Environment) -> Node {
+    println!("Debug Write:");
+    fn_print_env(&[], env);
+    println!("Args:");
+    for arg in args {
+        println!("  Arg: '{}'->'{}'", arg.token.value, arg.string());
+    }
+    println!(
+        "{}",
+        evaluate_args!(args, env)
+            .iter()
+            .map(super::Node::string)
+            .collect::<Vec<_>>()
+            .join(" ")
+            .as_str()
+    );
+
+    fn_true(&[])
 }
 
 pub fn fn_write_stderr(args: &[Node], env: &mut Environment) -> Node {
@@ -349,151 +338,153 @@ pub fn fn_write_stderr(args: &[Node], env: &mut Environment) -> Node {
             .as_str()
     );
 
-    symbol!("true")
+    fn_true(&[])
 }
 
 pub fn fn_write_file(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 2);
 
-    let filename = expect_text!(&args[0], env);
-    let content = expect_text!(&args[1], env);
+    if let Value::Text(filename) = evaluate_node(&args[0], env).value {
+        if let Value::Text(content) = evaluate_node(&args[1], env).value {
+            std::fs::write(filename, content).expect("Unable to write file");
+            return fn_true(&[]);
+        }
+    }
 
-    std::fs::write(filename, content).expect("Unable to write file");
-
-    symbol!("true")
+    panic!("Invalid arguments for write_file function");
 }
 
 pub fn fn_read_file(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let filename = expect_text!(&args[0], env);
-    let content = std::fs::read_to_string(filename).expect("Unable to read file");
+    if let Value::Text(filename) = evaluate_node(&args[0], env).value {
+        let content = std::fs::read_to_string(filename).expect("Unable to read file");
 
-    Node {
-        token: Token {
-            value: content,
-            kind: TokenKind::Text,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+        Node {
+            token: args[0].token.clone(),
+            value: Value::Text(content),
+            children: Vec::new(),
+        }
+    } else {
+        panic!("Invalid argument for read_file function");
     }
 }
 
 pub fn fn_join(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 2);
 
-    let separator = expect_text!(&args[0], env);
-    let strings = evaluate_args!(&args[1].children, env)
-        .iter()
-        .map(|arg| arg.token.value.clone())
-        .collect::<Vec<_>>()
-        .join(&separator);
-
-    Node {
-        token: Token {
-            value: strings,
-            kind: TokenKind::Text,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+    if let Value::Text(separator) = evaluate_node(&args[0], env).value {
+        if let Value::LParen() = &args[1].value {
+            let mut elements = Vec::new();
+            for child in &args[1].children {
+                if let Value::Text(text) = evaluate_node(child, env).value {
+                    elements.push(text);
+                } else {
+                    panic!("Invalid argument for join function");
+                }
+            }
+            let joined = elements.join(&separator);
+            return Node {
+                token: args[0].token.clone(),
+                value: Value::Text(joined),
+                children: Vec::new(),
+            };
+        }
     }
+
+    panic!("Invalid arguments for join function");
 }
 
 pub fn fn_split(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 2);
 
-    let separator = expect_text!(&args[0], env);
-    let string = expect_text!(&args[1], env);
+    if let Value::Text(separator) = evaluate_node(&args[0], env).value {
+        if let Value::Text(string) = evaluate_node(&args[1], env).value {
+            let parts = string.split(&separator).map(|s| Node {
+                token: args[0].token.clone(),
+                value: Value::Text(s.to_string()),
+                children: Vec::new(),
+            });
 
-    let parts = string.split(&separator).map(|s| {
-        Node {
-            token: Token {
-                value: s.to_string(),
-                kind: TokenKind::Text,
-                range: Range { start: 0, end: 0 },
-            },
-            children: Vec::new(),
+            return Node {
+                token: args[0].token.clone(),
+                value: Value::LParen(),
+                children: parts.collect(),
+            };
         }
-    });
-
-    Node {
-        token: Token {
-            value: String::from("split"),
-            kind: TokenKind::LParen,
-            range: Range { start: 0, end: 0 },
-        },
-        children: parts.collect(),
     }
+
+    panic!("Invalid arguments for split function");
 }
 
 pub fn fn_lines(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let string = expect_text!(&args[0], env);
-    let lines = string.lines().map(|s| {
-        Node {
-            token: Token {
-                value: s.to_string(),
-                kind: TokenKind::Text,
-                range: Range { start: 0, end: 0 },
-            },
+    if let Value::Text(string) = evaluate_node(&args[0], env).value {
+        let lines = string.lines().map(|s| Node {
+            token: args[0].token.clone(),
+            value: Value::Text(s.to_string()),
             children: Vec::new(),
-        }
-    });
+        });
 
-    Node {
-        token: Token {
-            value: String::from("lines"),
-            kind: TokenKind::LParen,
-            range: Range { start: 0, end: 0 },
-        },
-        children: lines.collect(),
+        return Node {
+            token: args[0].token.clone(),
+            value: Value::LParen(),
+            children: lines.collect(),
+        };
     }
+
+    panic!("Invalid argument for lines function");
 }
 
 pub fn fn_strlen(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let string = expect_text!(&args[0], env);
-    Node {
-        token: Token {
-            value: string.len().to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+    if let Value::Text(string) = evaluate_node(&args[0], env).value {
+        return Node {
+            token: args[0].token.clone(),
+            value: Value::Number(string.len() as i64),
+            children: Vec::new(),
+        };
     }
+
+    panic!("Invalid argument for strlen function");
 }
 
 pub fn fn_empty_string(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let arg = expect_text!(&args[0], env);
-    if arg.is_empty() {
-        symbol!("true")
-    } else {
-        symbol!("false")
+    if let Value::Text(string) = evaluate_node(&args[0], env).value {
+        if string.is_empty() {
+            return fn_true(&[]);
+        } else {
+            return fn_false(&[]);
+        }
     }
+
+    panic!("Invalid argument for empty_string function");
 }
 
+// TODO: This function should take an optional argument
 pub fn fn_print_env(args: &[Node], env: &mut Environment) -> Node {
+    println!("Environment:");
     let red = "\x1b[31m";
     let normal = "\x1b[0m";
     print!("{red}");
     env.variables.iter().for_each(|(key, value)| {
-        println!("{}: {}", key, value.string());
+        println!("  {}: {}", key, value.string());
     });
     println!("{normal}");
 
-    symbol!("true")
+    fn_true(&[])
 }
 
 pub fn test_equal(a: &Node, b: &Node) -> bool {
-    if a.token.kind != b.token.kind {
+    if a.value != b.value {
         return false;
     }
 
-    if a.token.kind == TokenKind::LParen {
+    if a.value == Value::LParen() {
         if a.children.len() != b.children.len() {
             return false;
         }
@@ -502,8 +493,6 @@ pub fn test_equal(a: &Node, b: &Node) -> bool {
                 return false;
             }
         }
-    } else if a.token.value != b.token.value {
-        return false;
     }
 
     true
@@ -516,113 +505,154 @@ pub fn fn_equal(args: &[Node], env: &mut Environment) -> Node {
     let b = evaluate_node(&args[1], env);
 
     if test_equal(&a, &b) {
-        symbol!("true")
+        fn_true(&[])
     } else {
-        symbol!("false")
+        fn_false(&[])
     }
 }
 
 pub fn fn_if(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 3);
 
-    if expect_symbol!(&args[0], env).token.value == "true" {
-        return evaluate_node(&args[1], env);
+    if let Value::Symbol(ref s) = evaluate_node(&args[0], env).value {
+        if s == "true" {
+            return evaluate_node(&args[1], env);
+        } else {
+            return evaluate_node(&args[2], env);
+        }
     }
 
-    evaluate_node(&args[2], env)
+    panic!("Invalid argument for if function");
 }
 
 pub fn fn_cond(args: &[Node], env: &mut Environment) -> Node {
     args.iter()
         .find_map(|arg| {
-            if expect_symbol!(&arg.children[0], env).token.value == "true" {
-                Some(evaluate_node(&arg.children[1], env))
+            if let Value::Symbol(ref s) = evaluate_node(&arg.children[0], env).value {
+                if s == "true" {
+                    Some(evaluate_node(&arg.children[1], env))
+                } else {
+                    None
+                }
             } else {
-                None
+                panic!("Invalid argument for cond function");
             }
         })
-        .unwrap_or_else(|| symbol!("false"))
+        .unwrap_or_else(|| fn_false(&[]))
 }
 
 pub fn fn_less_than(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 2);
 
-    if expect_number!(&args[0], env) < expect_number!(&args[1], env) {
-        symbol!("true")
-    } else {
-        symbol!("false")
+    if let Value::Number(a) = evaluate_node(&args[0], env).value {
+        if let Value::Number(b) = evaluate_node(&args[1], env).value {
+            if a < b {
+                return fn_true(&[]);
+            } else {
+                return fn_false(&[]);
+            }
+        }
     }
+
+    panic!("Invalid arguments for less_than function");
 }
 
 pub fn fn_greater_than(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 2);
 
-    if expect_number!(&args[0], env) > expect_number!(&args[1], env) {
-        symbol!("true")
-    } else {
-        symbol!("false")
+    if let Value::Number(a) = evaluate_node(&args[0], env).value {
+        if let Value::Number(b) = evaluate_node(&args[1], env).value {
+            if a > b {
+                return fn_true(&[]);
+            } else {
+                return fn_false(&[]);
+            }
+        }
     }
+
+    panic!("Invalid arguments for greater_than function");
 }
 
 pub fn fn_def(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 2);
 
-    let name = &args[0].token.value;
-    let value = evaluate_node(&args[1], env);
-    env.set(name.clone(), value);
-
-    symbol!("true")
+    if let Value::Symbol(name) = evaluate_node(&args[0], env).value {
+        let value = evaluate_node(&args[1], env);
+        env.set(name.clone(), value);
+        fn_true(&[])
+    } else {
+        panic!("Invalid argument for def function");
+    }
 }
 
 fn look_for_bang(children: &[Node]) -> bool {
     children.iter().any(|child| {
-        if child.token.kind == TokenKind::Symbol {
-            child.token.value.ends_with('!')
+        if let Value::Symbol(ref s) = child.value {
+            s.ends_with('!')
         } else {
             look_for_bang(&child.children)
         }
     })
 }
 
+//fn list_dependencies(name: &str, children: &[Node], env: &mut Environment) {
+//    for child in children {
+//        if child.token.kind == TokenKind::Symbol {
+//            // TODO: Find a way to differentiate between a function and variable
+//            println!("{} -> {}", name, child.token.value);
+//        } else {
+//            list_dependencies(name, &child.children, env);
+//        }
+//    }
+//}
+
 pub fn fn_func(args: &[Node], env: &mut Environment) -> Node {
-    let name = &args[0].token.value;
-    let params = args[1].clone();
-    let body = args[2..].to_vec();
-    let mut children = vec![params];
-    children.extend(body);
+    ////println!("Creating new function: {}", name);
+    ////println!("Dependencies:");
+    ////list_dependencies(name, &children, env);
 
-    assert_eq!(
-        name.ends_with('!'),
-        look_for_bang(&children),
-        "Function name and child identifiers must match the bang convention",
-    );
+    if let Value::Symbol(name) = evaluate_node(&args[0], env).value {
+        let params = args[1].clone();
+        let body = args[2..].to_vec();
+        let mut children = vec![params];
+        children.extend(body);
 
-    let lambda = Node {
-        token: Token {
-            value: String::from("lambda"),
-            kind: TokenKind::Lambda,
-            range: Range { start: 0, end: 0 },
-        },
-        children,
-    };
+        assert_eq!(
+            name.ends_with('!'),
+            look_for_bang(&children),
+            "Function name and child identifiers must match the bang convention",
+        );
 
-    env.set(name.clone(), lambda);
+        let lambda = Node {
+            token: args[0].token.clone(),
+            value: Value::Lambda(),
+            children,
+        };
 
-    symbol!("true")
+        env.set(name.clone(), lambda);
+
+        return fn_true(&[]);
+    }
+
+    panic!("Invalid argument for func function");
 }
 
 pub fn fn_set(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 3);
 
-    let name = &args[0].token.value;
-    let value = evaluate_node(&args[1], env);
-    let body = &args[2];
+    if let Value::Symbol(name) = evaluate_node(&args[0], env).value {
+        let value = evaluate_node(&args[1], env);
+        let body = &args[2];
 
-    let mut new_env = env.clone();
-    new_env.set(name.clone(), value);
-    evaluate_node(body, &mut new_env)
+        let mut new_env = env.clone();
+        new_env.set(name.clone(), value);
+        return evaluate_node(body, &mut new_env);
+    }
+
+    panic!("Invalid argument for set function");
 }
 
+// TODO: Should we be trimming?
 pub fn fn_read_line(args: &[Node]) -> Node {
     expect_n_args!(args, 0);
 
@@ -632,23 +662,18 @@ pub fn fn_read_line(args: &[Node]) -> Node {
         .expect("Failed to read line");
 
     Node {
-        token: Token {
-            value: input.trim().to_string(),
-            kind: TokenKind::Text,
-            range: Range { start: 0, end: 0 },
-        },
+        token: args[0].token.clone(),
+        value: Value::Text(input.trim().to_string()),
         children: Vec::new(),
     }
 }
 
 pub fn fn_list(args: &[Node], env: &mut Environment) -> Node {
     let list = evaluate_args!(args, env);
+
     Node {
-        token: Token {
-            value: String::from("list"),
-            kind: TokenKind::LParen,
-            range: Range { start: 0, end: 0 },
-        },
+        token: args[0].token.clone(),
+        value: Value::LParen(),
         children: list,
     }
 }
@@ -663,11 +688,8 @@ pub fn fn_map(args: &[Node], env: &mut Environment) -> Node {
         .children
         .iter()
         .map(|item| Node {
-            token: Token {
-                value: String::from("map"),
-                kind: TokenKind::LParen,
-                range: Range { start: 0, end: 0 },
-            },
+            token: args[0].token.clone(),
+            value: Value::LParen(),
             children: vec![function.clone(), item.clone()],
         })
         .collect::<Vec<_>>()
@@ -676,11 +698,8 @@ pub fn fn_map(args: &[Node], env: &mut Environment) -> Node {
         .collect::<Vec<_>>();
 
     Node {
-        token: Token {
-            value: String::from("map"),
-            kind: TokenKind::LParen,
-            range: Range { start: 0, end: 0 },
-        },
+        token: args[0].token.clone(),
+        value: Value::LParen(),
         children,
     }
 }
@@ -691,9 +710,9 @@ pub fn fn_filter(args: &[Node], env: &mut Environment) -> Node {
     let function = &args[0];
     let list = &args[1];
 
-
     let mut children = Vec::new();
     if env.get(&function.token.value.clone()).is_some() {
+        // Not intrinsic
         for item in evaluate_node(list, env).children {
             let lambda = handle_symbol(&function, &item.children, env);
 
@@ -713,15 +732,16 @@ pub fn fn_filter(args: &[Node], env: &mut Environment) -> Node {
             }
         }
     } else {
+        // Intrinsic
         for item in evaluate_node(list, env).children {
-            let ret = evaluate_node(&Node {
-                token: Token {
-                    value: String::from("filter"),
-                    kind: TokenKind::LParen,
-                    range: Range { start: 0, end: 0 },
+            let ret = evaluate_node(
+                &Node {
+                    token: function.token.clone(),
+                    value: Value::LParen(),
+                    children: vec![function.clone(), item.clone()],
                 },
-                children: vec![function.clone(), item.clone()],
-            }, env);
+                env,
+            );
             if ret.token.value == "true" {
                 children.push(item.clone());
             }
@@ -729,185 +749,229 @@ pub fn fn_filter(args: &[Node], env: &mut Environment) -> Node {
     }
 
     Node {
-        token: Token {
-            value: String::from("filter"),
-            kind: TokenKind::LParen,
-            range: Range { start: 0, end: 0 },
-        },
+        token: args[0].token.clone(),
+        value: Value::LParen(),
         children,
     }
 }
 
 pub fn fn_true(args: &[Node]) -> Node {
-    expect_n_args!(args, 0);
-    symbol!("true")
+    Node {
+        token: Token {
+            value: "true".to_string(),
+            kind: TokenKind::Symbol,
+            range: Range { start: 0, end: 0 },
+        },
+        value: Value::Symbol("true".to_string()),
+        children: Vec::new(),
+    }
 }
 
 pub fn fn_false(args: &[Node]) -> Node {
-    expect_n_args!(args, 0);
-    symbol!("false")
+    Node {
+        token: Token {
+            value: "false".to_string(),
+            kind: TokenKind::Symbol,
+            range: Range { start: 0, end: 0 },
+        },
+        value: Value::Symbol("false".to_string()),
+        children: Vec::new(),
+    }
 }
 
 pub fn fn_is_even(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    if expect_number!(&args[0], env) % 2 == 0 {
-        symbol!("true")
-    } else {
-        symbol!("false")
+    if let Value::Number(n) = evaluate_node(&args[0], env).value {
+        if n % 2 == 0 {
+            return fn_true(&[]);
+        } else {
+            return fn_false(&[]);
+        }
     }
+
+    panic!("Invalid argument for is_even function");
 }
 
 pub fn fn_is_odd(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    if expect_number!(&args[0], env) % 2 != 0 {
-        symbol!("true")
-    } else {
-        symbol!("false")
+    if let Value::Number(n) = evaluate_node(&args[0], env).value {
+        if n % 2 != 0 {
+            return fn_true(&[]);
+        } else {
+            return fn_false(&[]);
+        }
     }
+
+    panic!("Invalid argument for is_odd function");
 }
 
 pub fn fn_get_environment_variable(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let var_name = expect_text!(&args[0], env);
-    let value = std::env::var(var_name).unwrap_or_else(|_| String::from("nil"));
-    Node {
-        token: Token {
-            value,
-            kind: TokenKind::Text,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+    if let Value::Text(var_name) = evaluate_node(&args[0], env).value {
+        let value = std::env::var(var_name).unwrap_or_else(|_| String::from(""));
+        return Node {
+            token: args[0].token.clone(),
+            value: Value::Text(value),
+            children: Vec::new(),
+        };
     }
+
+    panic!("Invalid argument for get_environment_variable function");
 }
 
 pub fn fn_head(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let list = expect_list!(&args[0], env);
-    if list.is_empty() {
-        panic!("Empty list");
-    } else {
-        list[0].clone()
+    let n = evaluate_node(&args[0], env);
+    if let Value::LParen() = n.value {
+        if args[0].children.is_empty() {
+            panic!("Empty list");
+        } else {
+            return n.children[0].clone();
+        }
     }
+
+    panic!("Invalid argument for head function");
 }
 
 pub fn fn_last(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let list = expect_list!(&args[0], env);
-    if list.is_empty() {
-        panic!("Empty list");
-    } else {
-        list[list.len() - 1].clone()
+    let n = evaluate_node(&args[0], env);
+    if let Value::LParen() = n.value {
+        if args[0].children.is_empty() {
+            panic!("Empty list");
+        } else {
+            return n.children.last().unwrap().clone();
+        }
     }
+
+    panic!("Invalid argument for last function");
 }
 
 pub fn fn_tail(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let list = expect_list!(&args[0], env);
-    if list.is_empty() {
-        panic!("Empty list");
-    } else {
-        Node {
-            token: Token {
-                value: String::from("tail"),
-                kind: TokenKind::LParen,
-                range: Range { start: 0, end: 0 },
-            },
-            children: list[1..].to_vec(),
+    let n = evaluate_node(&args[0], env);
+    if let Value::LParen() = n.value {
+        if args[0].children.is_empty() {
+            panic!("Empty list");
+        } else {
+            return Node {
+                token: args[0].token.clone(),
+                value: Value::LParen(),
+                children: n.children[1..].to_vec(),
+            };
         }
     }
+
+    panic!("Invalid argument for tail function");
 }
 
 pub fn fn_length(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let list = expect_list!(&args[0], env);
-    Node {
-        token: Token {
-            value: list.len().to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+    let n = evaluate_node(&args[0], env);
+    if let Value::LParen() = n.value {
+        return Node {
+            token: args[0].token.clone(),
+            value: Value::Number(n.children.len() as i64),
+            children: Vec::new(),
+        };
     }
+
+    panic!("Invalid argument for length function");
 }
 
 pub fn fn_reverse(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let list = expect_list!(&args[0], env);
-    Node {
-        token: Token {
-            value: String::from("reverse"),
-            kind: TokenKind::LParen,
-            range: Range { start: 0, end: 0 },
-        },
-        children: list.iter().rev().cloned().collect(),
+    let n = evaluate_node(&args[0], env);
+    if let Value::LParen() = n.value {
+        return Node {
+            token: args[0].token.clone(),
+            value: Value::LParen(),
+            children: n.children.iter().rev().cloned().collect(),
+        };
     }
+
+    panic!("Invalid argument for reverse function");
 }
 
 pub fn fn_load(args: &[Node], env: &mut Environment) -> Node {
     args.iter().for_each(|arg| {
-        let filename = expect_text!(arg, env);
-        process_file(&filename, env, true, false, false);
+        if let Value::Text(filename) = evaluate_node(arg, env).value {
+            process_file(&filename, env, true, false, false);
+        } else {
+            panic!("Invalid argument for load function");
+        }
     });
-    symbol!("true")
+
+    fn_true(&[])
 }
 
 pub fn fn_url_encode(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let input = expect_text!(&args[0], env);
-    let encoded = url::form_urlencoded::byte_serialize(input.as_bytes()).collect::<String>();
+    if let Value::Text(input) = evaluate_node(&args[0], env).value {
+        let encoded = url::form_urlencoded::byte_serialize(input.as_bytes()).collect::<String>();
 
-    Node {
-        token: Token {
-            value: encoded,
-            kind: TokenKind::Text,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+        return Node {
+            token: args[0].token.clone(),
+            value: Value::Text(encoded),
+            children: Vec::new(),
+        };
     }
+
+    panic!("Invalid argument for url_encode function");
 }
 
 pub fn fn_url_decode(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let input = expect_text!(&args[0], env);
-    let decoded = url::form_urlencoded::parse(input.as_bytes())
-        .map(|(key, value)| format!("{key}={value}"))
-        .collect::<Vec<_>>()
-        .join("&");
+    if let Value::Text(input) = evaluate_node(&args[0], env).value {
+        let decoded = url::form_urlencoded::parse(input.as_bytes())
+            .map(|(key, value)| format!("{key}={value}"))
+            .collect::<Vec<_>>()
+            .join("&");
 
-    Node {
-        token: Token {
-            value: decoded,
-            kind: TokenKind::Text,
-            range: Range { start: 0, end: 0 },
-        },
-        children: Vec::new(),
+        return Node {
+            token: args[0].token.clone(),
+            value: Value::Text(decoded),
+            children: Vec::new(),
+        };
     }
+
+    panic!("Invalid argument for url_decode function");
 }
 
 pub fn fn_sleep(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let duration = expect_number!(&args[0], env);
-    std::thread::sleep(std::time::Duration::from_secs(duration.try_into().expect("Invalid duration")));
-    symbol!("true")
+    if let Value::Number(duration) = evaluate_node(&args[0], env).value {
+        std::thread::sleep(std::time::Duration::from_secs(
+            duration.try_into().expect("Invalid duration"),
+        ));
+        return fn_true(&[]);
+    }
+
+    panic!("Invalid argument for sleep function");
 }
 
 pub fn fn_sleep_ms(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let duration = expect_number!(&args[0], env);
-    std::thread::sleep(std::time::Duration::from_millis(duration.try_into().expect("Invalid duration")));
-    symbol!("true")
+    if let Value::Number(duration) = evaluate_node(&args[0], env).value {
+        std::thread::sleep(std::time::Duration::from_millis(
+            duration.try_into().expect("Invalid duration"),
+        ));
+        return fn_true(&[]);
+    }
+
+    panic!("Invalid argument for sleep_ms function");
 }
 
 pub fn fn_time_ms(args: &[Node], env: &mut Environment) -> Node {
@@ -917,11 +981,8 @@ pub fn fn_time_ms(args: &[Node], env: &mut Environment) -> Node {
     });
 
     Node {
-        token: Token {
-            value: start.elapsed().as_millis().to_string(),
-            kind: TokenKind::Number,
-            range: Range { start: 0, end: 0 },
-        },
+        token: args[0].token.clone(),
+        value: Value::Number(start.elapsed().as_millis() as i64),
         children: Vec::new(),
     }
 }
@@ -933,19 +994,17 @@ pub fn fn_lambda(args: &[Node], env: &mut Environment) -> Node {
     let body = args[1].clone();
 
     Node {
-        token: Token {
-            value: String::from("lambda"),
-            kind: TokenKind::Lambda,
-            range: Range { start: 0, end: 0 },
-        },
+        token: args[0].token.clone(),
+        value: Value::Lambda(),
         children: vec![params, body],
     }
 }
 
 pub fn fn_pipeline(args: &[Node], env: &mut Environment) -> Node {
-    let mut root = args[args.len()-1].clone();
+    let mut root = args[args.len() - 1].clone();
 
-    args.iter().rev()
+    args.iter()
+        .rev()
         .skip(1)
         .fold(&mut root, |current, next_node| {
             current.children.push(next_node.clone());
@@ -958,99 +1017,119 @@ pub fn fn_pipeline(args: &[Node], env: &mut Environment) -> Node {
 pub fn fn_reverse_pipeline(args: &[Node], env: &mut Environment) -> Node {
     let mut root = args[0].clone();
 
-    args.iter()
-        .skip(1)
-        .fold(&mut root, |current, next_node| {
-            current.children.push(next_node.clone());
-            current.children.last_mut().unwrap()
-        });
+    args.iter().skip(1).fold(&mut root, |current, next_node| {
+        current.children.push(next_node.clone());
+        current.children.last_mut().unwrap()
+    });
 
     evaluate_node(&root, env)
+}
+
+pub fn fn_block(args: &[Node], env: &mut Environment) -> Node {
+    for arg in args {
+        evaluate_node(arg, env);
+    }
+
+    fn_true(&[])
 }
 
 pub fn fn_exit(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 1);
 
-    let exit_code = expect_number!(&args[0], env);
-    std::process::exit(exit_code);
+    if let Value::Number(exit_code) = evaluate_node(&args[0], env).value {
+        std::process::exit(exit_code.try_into().expect("Invalid exit code"));
+    }
+
+    panic!("Invalid argument for exit function");
 }
 
-use std::io::Write;
 pub fn fn_system(args: &[Node], env: &mut Environment) -> Node {
     if args.is_empty() {
         panic!("No command provided");
     }
 
-    let arguments = if args.len() > 1 {
-        expect_list!(&args[1], env)
-    } else {
-        Vec::new()
-    };
+    if let Value::Text(command) = evaluate_node(&args[0], env).value {
+        let arguments = if args.len() > 1 {
+            args[1].clone()
+        } else {
+            Node {
+                token: args[0].token.clone(),
+                value: Value::LParen(),
+                children: Vec::new(),
+            }
+        };
 
-    let stdin_string = if args.len() > 2 {
-        expect_text!(&args[2], env)
-    } else {
-        String::new()
-    };
+        let stdin_string = if args.len() > 2 {
+            if let Value::Text(string) = evaluate_node(&args[2], env).value {
+                string
+            } else {
+                panic!("Invalid argument for system function");
+            }
+        } else {
+            String::new()
+        };
 
-    let mut child = std::process::Command::new(expect_text!(&args[0], env))
-        .args(arguments.iter().map(|arg| arg.token.value.clone()))
-        .stdin(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
-        .expect("Failed to start process");
+        let mut child = std::process::Command::new(command)
+            .args(arguments.children.iter().map(|arg| {
+                if let Value::Text(ref s) = arg.value {
+                    s.clone()
+                } else {
+                    panic!("Invalid argument for system function");
+                }
+            }))
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .expect("Failed to start process");
 
-    {
-        let mut stdin = child.stdin.take().expect("Failed to open stdin");
-        stdin.write_all(stdin_string.as_bytes()).expect("Failed to write to stdin");
+        {
+            let mut stdin = child.stdin.take().expect("Failed to open stdin");
+            stdin
+                .write_all(stdin_string.as_bytes())
+                .expect("Failed to write to stdin");
+        }
+
+        let output = child
+            .wait_with_output()
+            .expect("Failed to read stdout/stderr");
+
+        return Node {
+            token: args[0].token.clone(),
+            value: Value::LParen(),
+            children: vec![
+                Node {
+                    token: args[0].token.clone(),
+                    value: Value::Number(output.status.code().unwrap_or(-1) as i64),
+                    children: Vec::new(),
+                },
+                Node {
+                    token: args[0].token.clone(),
+                    value: Value::Text(String::from_utf8_lossy(&output.stdout).to_string()),
+                    children: Vec::new(),
+                },
+                Node {
+                    token: args[0].token.clone(),
+                    value: Value::Text(String::from_utf8_lossy(&output.stderr).to_string()),
+                    children: Vec::new(),
+                },
+            ],
+        };
     }
 
-    let output = child.wait_with_output().expect("Failed to read stdout/stderr");
-
-    Node {
-        token: Token {
-            value: String::from("system"),
-            kind: TokenKind::LParen,
-            range: Range { start: 0, end: 0 },
-        },
-        children: vec![
-            Node {
-                token: Token {
-                    value: output.status.code().unwrap_or(-1).to_string(),
-                    kind: TokenKind::Number,
-                    range: Range { start: 0, end: 0 },
-                },
-                children: Vec::new(),
-            },
-            Node {
-                token: Token {
-                    value: String::from_utf8_lossy(&output.stdout).to_string(),
-                    kind: TokenKind::Text,
-                    range: Range { start: 0, end: 0 },
-                },
-                children: Vec::new(),
-            },
-            Node {
-                token: Token {
-                    value: String::from_utf8_lossy(&output.stderr).to_string(),
-                    kind: TokenKind::Text,
-                    range: Range { start: 0, end: 0 },
-                },
-                children: Vec::new(),
-            }],
-    }
+    panic!("Invalid argument for system function");
 }
 
 pub fn fn_contains(args: &[Node], env: &mut Environment) -> Node {
     expect_n_args!(args, 2);
 
-    let item = evaluate_node(&args[0], env);
-    let list = expect_list!(&args[1], env);
-
-    if list.iter().any(|x| test_equal(x, &item)) {
-        symbol!("true")
-    } else {
-        symbol!("false")
+    if let Value::LParen() = evaluate_node(&args[1], env).value {
+        for item in evaluate_node(&args[1], env).children {
+            if test_equal(&item, &args[0]) {
+                return fn_true(&[]);
+            }
+        }
     }
+
+    panic!("Invalid arguments for contains function");
 }
