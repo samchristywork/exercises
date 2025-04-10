@@ -1,33 +1,46 @@
 use crate::Environment;
 use crate::Node;
 use crate::TokenKind;
+use crate::Value;
 use crate::intrinsic;
 
-pub fn evaluate_node(node: &Node, env: &mut Environment) -> Node {
-    match node.token.kind {
-        TokenKind::Module => {
-            for child in &node.children {
-                evaluate_node(child, env);
-            }
+const VERBOSE: bool = false;
 
-            Node {
-                token: node.token.clone(),
-                children: Vec::new(),
-            }
-        }
-        TokenKind::LParen => {
+pub fn evaluate_node(node: &Node, env: &mut Environment) -> Node {
+    if VERBOSE {
+        println!("Evaluating node: {}", node);
+    }
+
+    match &node.value {
+        Value::LParen() => {
             let function = evaluate_node(&node.children[0], env);
             apply_function(&function, &node.children[1..], env)
         }
-        TokenKind::Symbol => env
-            .get(&node.token.value)
+        Value::Symbol(s) => env
+            .get(&s)
             .map_or_else(|| node.clone(), std::clone::Clone::clone),
+        Value::Module() => {
+            let mut result = node.clone();
+            for child in &node.children {
+                result = evaluate_node(child, env);
+            }
+            result
+        }
         _ => node.clone(),
     }
 }
 
 pub fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> Node {
-    match function.token.value.as_str() {
+    if VERBOSE {
+        println!("Handling symbol: {}", function);
+    }
+
+    let name = match &function.value {
+        Value::Symbol(s) => s,
+        _ => panic!("Expected a symbol, found: {:?}", function.value),
+    };
+
+    match name.as_str() {
         // Operators
         "+" => intrinsic::fn_add(args, env),
         "-" => intrinsic::fn_sub(args, env),
@@ -63,10 +76,12 @@ pub fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> N
         "false" => intrinsic::fn_false(args),
         "|" => intrinsic::fn_pipeline(args, env),
         "rev|" => intrinsic::fn_reverse_pipeline(args, env),
+        "{}" => intrinsic::fn_block(args, env),
         "exit" => intrinsic::fn_exit(args, env), // TODO: Is ! needed?
 
         // I/O
         "write!" => intrinsic::fn_write(args, env),
+        "!" => intrinsic::fn_debug_write(args, env),
         "write-stderr!" => intrinsic::fn_write_stderr(args, env),
         "write-file!" => intrinsic::fn_write_file(args, env),
         "read-line!" => intrinsic::fn_read_line(args),
@@ -112,17 +127,23 @@ pub fn handle_symbol(function: &Node, args: &[Node], env: &mut Environment) -> N
         "time-ms" => intrinsic::fn_time_ms(args, env),
         "system!" => intrinsic::fn_system(args, env),
         "contains" => intrinsic::fn_contains(args, env),
-        _ => env.get(&function.token.value).map_or_else(
-            || panic!("Unknown function: {}", function.token.value),
+        _ => env.get(&name).map_or_else(
+            || panic!("Unknown function: {}", name),
             std::clone::Clone::clone,
         ),
     }
 }
 
 fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node {
-    match function.token.kind {
-        TokenKind::Symbol => handle_symbol(function, args, env),
-        TokenKind::Lambda => {
+    if VERBOSE {
+        println!("Applying function: {}", function);
+        for arg in args {
+            println!("Argument: {}", arg);
+        }
+    }
+    match function.value {
+        Value::Symbol(_) => handle_symbol(function, args, env),
+        Value::Lambda() => {
             let params = &function.children[0];
             let body = &function.children[1..];
 
@@ -130,7 +151,10 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
 
             let mut new_env = env.clone();
             for (param, arg) in params.children.iter().zip(args) {
-                new_env.set(param.token.value.clone(), evaluate_node(arg, env));
+                match param.value {
+                    Value::Symbol(ref s) => new_env.set(s.clone(), evaluate_node(arg, env)),
+                    _ => panic!("Expected a symbol, found: {:?}", param.value),
+                }
             }
 
             let mut return_value = intrinsic::fn_true(&[]);
@@ -140,9 +164,9 @@ fn apply_function(function: &Node, args: &[Node], env: &mut Environment) -> Node
 
             return_value
         }
-        TokenKind::LParen => {
+        Value::LParen() => {
             apply_function(&function.children[0].clone(), &function.children[1..], env)
         }
-        _ => panic!("Invalid function application: {}", function.token),
+        _ => panic!("Invalid function application: {:?}", function.value),
     }
 }
