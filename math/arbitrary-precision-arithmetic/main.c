@@ -61,5 +61,43 @@ Number add(Number a, Number b) {
   return result;
 }
 
+Number generate_number(int n, int d) {
+  Number number;
+  number.length = n;
+  number.digits = allocate_string(n + 1);
+  for (int i = 0; i < n; i++) {
+    number.digits[i] = '0'+ d;
+  }
+  number.digits[n] = '\0';
+  return number;
+}
+
 int main() {
+  {
+    Number a = create_number("12345678901234567890");
+    Number b = create_number("98765432109876543210");
+
+    Number result = add(a, b);
+
+    printf("Result: %s\n", result.digits);
+
+    free_number(a);
+    free_number(b);
+    free_number(result);
+  }
+
+  {
+    Number a = generate_number(999, 9);
+    Number b = create_number("1");
+
+    Number result = add(a, b);
+
+    printf("Result: %s\n", result.digits);
+
+    free_number(a);
+    free_number(b);
+    free_number(result);
+  }
+
+  return 0;
 }
