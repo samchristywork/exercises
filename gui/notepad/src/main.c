@@ -181,4 +181,74 @@ gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, AppData *data) {
 }
 
 int main(int argc, char *argv[]) {
+  gtk_init(&argc, &argv);
+
+  AppData *data = g_new0(AppData, 1);
+  data->filename = NULL;
+  data->modified = FALSE;
+
+  data->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+  gtk_window_set_title(GTK_WINDOW(data->window), "GTK Notepad");
+  gtk_window_set_default_size(GTK_WINDOW(data->window), 600, 400);
+  g_signal_connect(data->window, "destroy", G_CALLBACK(quit), data);
+
+  gtk_window_set_resizable(GTK_WINDOW(data->window), FALSE);
+
+  GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+  gtk_container_add(GTK_CONTAINER(data->window), vbox);
+
+  GtkWidget *menubar = gtk_menu_bar_new();
+  gtk_box_pack_start(GTK_BOX(vbox), menubar, FALSE, FALSE, 0);
+
+  GtkWidget *filemenu = gtk_menu_new();
+  GtkWidget *fileitem = gtk_menu_item_new_with_label("File");
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(fileitem), filemenu);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menubar), fileitem);
+
+  GtkWidget *newitem = gtk_menu_item_new_with_label("New");
+  g_signal_connect_swapped(newitem, "activate", G_CALLBACK(new_file), data);
+  gtk_menu_shell_append(GTK_MENU_SHELL(filemenu), newitem);
+
+  GtkWidget *openitem = gtk_menu_item_new_with_label("Open");
+  g_signal_connect_swapped(openitem, "activate", G_CALLBACK(open_file), data);
+  gtk_menu_shell_append(GTK_MENU_SHELL(filemenu), openitem);
+
+  GtkWidget *saveitem = gtk_menu_item_new_with_label("Save");
+  g_signal_connect_swapped(saveitem, "activate", G_CALLBACK(save_file), data);
+  gtk_menu_shell_append(GTK_MENU_SHELL(filemenu), saveitem);
+
+  GtkWidget *saveasitem = gtk_menu_item_new_with_label("Save As...");
+  g_signal_connect_swapped(saveasitem, "activate", G_CALLBACK(save_as_file),
+                           data);
+  gtk_menu_shell_append(GTK_MENU_SHELL(filemenu), saveasitem);
+
+  GtkWidget *separator = gtk_separator_menu_item_new();
+  gtk_menu_shell_append(GTK_MENU_SHELL(filemenu), separator);
+
+  GtkWidget *quititem = gtk_menu_item_new_with_label("Quit");
+  g_signal_connect_swapped(quititem, "activate", G_CALLBACK(quit), data);
+  gtk_menu_shell_append(GTK_MENU_SHELL(filemenu), quititem);
+
+  data->text_view = gtk_text_view_new();
+  gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(data->text_view), GTK_WRAP_WORD);
+  g_signal_connect(data->text_view, "changed", G_CALLBACK(on_text_changed),
+                   data);
+
+  GtkWidget *scroll_window = gtk_scrolled_window_new(NULL, NULL);
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll_window),
+                                 GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+  gtk_container_add(GTK_CONTAINER(scroll_window), data->text_view);
+
+  gtk_box_pack_start(GTK_BOX(vbox), scroll_window, TRUE, TRUE, 0);
+
+  g_signal_connect(data->window, "key-press-event", G_CALLBACK(on_key_press),
+                   data);
+
+  gtk_widget_show_all(data->window);
+
+  if (argc > 1) {
+    load_file(data, argv[1]);
+  }
+
+  gtk_main();
 }
