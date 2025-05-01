@@ -158,5 +158,27 @@ void new_file(AppData *data) {
   data->modified = FALSE;
 }
 
+void quit(AppData *data) { gtk_main_quit(); }
+
+void on_text_changed(GtkWidget *widget, AppData *data) {
+  data->modified = TRUE;
+}
+
+gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, AppData *data) {
+  if ((event->state & GDK_CONTROL_MASK) && (event->keyval == GDK_KEY_s)) {
+    save_file(data);
+    return TRUE;
+  }
+  if ((event->state & GDK_CONTROL_MASK) && (event->keyval == GDK_KEY_n)) {
+    new_file(data);
+    return TRUE;
+  }
+  if ((event->state & GDK_CONTROL_MASK) && (event->keyval == GDK_KEY_o)) {
+    open_file(data);
+    return TRUE;
+  }
+  return FALSE;
+}
+
 int main(int argc, char *argv[]) {
 }
