@@ -146,5 +146,17 @@ void save_file(AppData *data) {
   }
 }
 
+void new_file(AppData *data) {
+  GtkTextBuffer *text_buffer =
+      gtk_text_view_get_buffer(GTK_TEXT_VIEW(data->text_view));
+  gtk_text_buffer_set_text(text_buffer, "", -1);
+
+  if (data->filename) {
+    g_free(data->filename);
+    data->filename = NULL;
+  }
+  data->modified = FALSE;
+}
+
 int main(int argc, char *argv[]) {
 }
