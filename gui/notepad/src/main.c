@@ -8,6 +8,7 @@ typedef struct {
   GtkWidget *save_dialog;
   char *filename;
   gboolean modified;
+  GtkWidget *font_selection_dialog;
 } AppData;
 
 void load_file(AppData *data, const char *filename) {
@@ -214,12 +215,45 @@ gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, AppData *data) {
   return FALSE;
 }
 
+void on_font_selected(GtkWidget *dialog, gint response_id, AppData *data) {
+  if (response_id == GTK_RESPONSE_OK) {
+    char *font_name = gtk_font_chooser_get_font(GTK_FONT_CHOOSER(dialog));
+    if (font_name) {
+      PangoFontDescription *font_desc =
+          pango_font_description_from_string(font_name);
+      if (font_desc) {
+        gtk_widget_override_font(data->text_view, font_desc);
+        pango_font_description_free(font_desc);
+      } else {
+        g_print("Error parsing font description.\n");
+      }
+      g_free(font_name);
+    }
+  }
+  gtk_widget_destroy(dialog);
+  data->font_selection_dialog = NULL;
+}
+
+void open_font_dialog(AppData *data) {
+  if (data->font_selection_dialog) {
+    gtk_widget_destroy(data->font_selection_dialog);
+  }
+
+  data->font_selection_dialog =
+      gtk_font_chooser_dialog_new("Select Font", GTK_WINDOW(data->window));
+
+  g_signal_connect(data->font_selection_dialog, "response",
+                   G_CALLBACK(on_font_selected), data);
+  gtk_widget_show_all(data->font_selection_dialog);
+}
+
 int main(int argc, char *argv[]) {
   gtk_init(&argc, &argv);
 
   AppData *data = g_new0(AppData, 1);
   data->filename = NULL;
   data->modified = FALSE;
+  data->font_selection_dialog = NULL;
 
   data->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(data->window), "GTK Notepad");
@@ -264,6 +298,16 @@ int main(int argc, char *argv[]) {
   g_signal_connect_swapped(quititem, "activate", G_CALLBACK(on_delete_event),
                            data);
   gtk_menu_shell_append(GTK_MENU_SHELL(filemenu), quititem);
+
+  GtkWidget *editmenu = gtk_menu_new();
+  GtkWidget *edititem = gtk_menu_item_new_with_label("Edit");
+  gtk_menu_item_set_submenu(GTK_MENU_ITEM(edititem), editmenu);
+  gtk_menu_shell_append(GTK_MENU_SHELL(menubar), edititem);
+
+  GtkWidget *fontitem = gtk_menu_item_new_with_label("Font...");
+  g_signal_connect_swapped(fontitem, "activate", G_CALLBACK(open_font_dialog),
+                           data);
+  gtk_menu_shell_append(GTK_MENU_SHELL(editmenu), fontitem);
 
   data->text_view = gtk_text_view_new();
   gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(data->text_view), GTK_WRAP_WORD);
