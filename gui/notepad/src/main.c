@@ -271,6 +271,11 @@ int main(int argc, char *argv[]) {
       gtk_text_view_get_buffer(GTK_TEXT_VIEW(data->text_view));
   g_signal_connect(text_buffer, "changed", G_CALLBACK(on_text_changed), data);
 
+  PangoFontDescription *font_desc =
+      pango_font_description_from_string("Monospace");
+  gtk_widget_override_font(data->text_view, font_desc);
+  pango_font_description_free(font_desc);
+
   GtkWidget *scroll_window = gtk_scrolled_window_new(NULL, NULL);
   gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scroll_window),
                                  GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
