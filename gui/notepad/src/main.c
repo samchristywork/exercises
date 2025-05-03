@@ -13,7 +13,7 @@ typedef struct {
 } AppData;
 AppData *app_data;
 
-void update_status_bar(GtkTextBuffer *buffer, GtkWidget *status_bar) {
+void update_status_bar(GtkTextBuffer *buffer, GtkLabel *status_bar) {
   GtkTextIter iter;
   gtk_text_buffer_get_iter_at_mark(buffer, &iter,
                                    gtk_text_buffer_get_insert(buffer));
@@ -22,7 +22,7 @@ void update_status_bar(GtkTextBuffer *buffer, GtkWidget *status_bar) {
 
   char status_text[100];
   sprintf(status_text, "Line: %d, Column: %d", line, column);
-  gtk_label_set_text(GTK_LABEL(status_bar), status_text);
+  gtk_label_set_text(status_bar, status_text);
 }
 
 void load_file(const char *filename) {
@@ -58,7 +58,7 @@ void load_file(const char *filename) {
   gtk_text_buffer_get_start_iter(text_buffer, &start);
   gtk_text_buffer_place_cursor(text_buffer, &start);
 
-  update_status_bar(text_buffer, app_data->status_bar);
+  update_status_bar(text_buffer, GTK_LABEL(app_data->status_bar));
 }
 
 void open_handler(GtkWidget *dialog, gint response_id) {
@@ -180,7 +180,7 @@ void new_file() {
     app_data->filename = NULL;
   }
   app_data->modified = FALSE;
-  update_status_bar(text_buffer, app_data->status_bar);
+  update_status_bar(text_buffer, GTK_LABEL(app_data->status_bar));
 }
 
 gboolean confirm_quit() {
@@ -217,7 +217,7 @@ void on_text_changed(GtkWidget *widget) {
   app_data->modified = TRUE;
   update_status_bar(
       gtk_text_view_get_buffer(GTK_TEXT_VIEW(app_data->text_view)),
-      app_data->status_bar);
+      GTK_LABEL(app_data->status_bar));
 }
 
 gboolean on_key_press(GtkWidget *widget, GdkEventKey *event) {
@@ -233,6 +233,14 @@ gboolean on_key_press(GtkWidget *widget, GdkEventKey *event) {
     open_file();
     return TRUE;
   }
+  return FALSE;
+}
+
+gboolean on_key_release(GtkWidget *widget, GdkEventKey *event) {
+  GtkTextBuffer *text_buffer =
+      gtk_text_view_get_buffer(GTK_TEXT_VIEW(app_data->text_view));
+  update_status_bar(text_buffer, GTK_LABEL(app_data->status_bar));
+
   return FALSE;
 }
 
@@ -266,12 +274,6 @@ void open_font_dialog() {
   g_signal_connect(app_data->font_selection_dialog, "response",
                    G_CALLBACK(on_font_selected), NULL);
   gtk_widget_show_all(app_data->font_selection_dialog);
-}
-
-void on_cursor_position_changed(GtkWidget *text_view) {
-  GtkTextBuffer *text_buffer =
-      gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-  update_status_bar(text_buffer, app_data->status_bar);
 }
 
 int main(int argc, char *argv[]) {
@@ -342,8 +344,6 @@ int main(int argc, char *argv[]) {
   GtkTextBuffer *text_buffer =
       gtk_text_view_get_buffer(GTK_TEXT_VIEW(app_data->text_view));
   g_signal_connect(text_buffer, "changed", G_CALLBACK(on_text_changed), NULL);
-  g_signal_connect(app_data->text_view, "move-cursor",
-                   G_CALLBACK(on_cursor_position_changed), NULL);
 
   PangoFontDescription *font_desc =
       pango_font_description_from_string("Monospace");
@@ -363,6 +363,8 @@ int main(int argc, char *argv[]) {
 
   g_signal_connect(app_data->window, "key-press-event",
                    G_CALLBACK(on_key_press), NULL);
+  g_signal_connect(app_data->window, "key-release-event",
+                   G_CALLBACK(on_key_release), NULL);
 
   gtk_widget_show_all(app_data->window);
 
