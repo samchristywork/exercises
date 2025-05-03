@@ -77,6 +77,7 @@ void open_handler(GtkWidget *dialog, gint response_id) {
 void open_file() {
   if (app_data->open_dialog) {
     gtk_widget_destroy(app_data->open_dialog);
+    app_data->open_dialog = NULL;
   }
 
   app_data->open_dialog = gtk_file_chooser_dialog_new(
@@ -130,6 +131,7 @@ void save_handler(GtkWidget *dialog, gint response_id) {
 void save_as_file() {
   if (app_data->save_dialog) {
     gtk_widget_destroy(app_data->save_dialog);
+    app_data->save_dialog = NULL;
   }
 
   app_data->save_dialog = gtk_file_chooser_dialog_new(
@@ -166,7 +168,7 @@ void save_file() {
       g_free(text);
     }
   } else {
-    save_as_file(app_data);
+    save_as_file();
   }
 }
 
@@ -181,6 +183,22 @@ void new_file() {
   }
   app_data->modified = FALSE;
   update_status_bar(text_buffer, GTK_LABEL(app_data->status_bar));
+}
+
+void cleanup() {
+  if (app_data->filename) {
+    g_free(app_data->filename);
+  }
+  if (app_data->font_selection_dialog) {
+    gtk_widget_destroy(app_data->font_selection_dialog);
+  }
+  if (app_data->open_dialog) {
+    gtk_widget_destroy(app_data->open_dialog);
+  }
+  if (app_data->save_dialog) {
+    gtk_widget_destroy(app_data->save_dialog);
+  }
+  g_free(app_data);
 }
 
 gboolean confirm_quit() {
@@ -205,7 +223,8 @@ gboolean confirm_quit() {
 }
 
 gboolean on_delete_event(GtkWidget *widget, GdkEvent *event) {
-  if (confirm_quit(app_data)) {
+  if (confirm_quit()) {
+    cleanup();
     gtk_main_quit();
     return FALSE; // Let the window close
   } else {
@@ -266,6 +285,7 @@ void on_font_selected(GtkWidget *dialog, gint response_id) {
 void open_font_dialog() {
   if (app_data->font_selection_dialog) {
     gtk_widget_destroy(app_data->font_selection_dialog);
+    app_data->font_selection_dialog = NULL;
   }
 
   app_data->font_selection_dialog =
@@ -283,12 +303,14 @@ int main(int argc, char *argv[]) {
   app_data->filename = NULL;
   app_data->modified = FALSE;
   app_data->font_selection_dialog = NULL;
+  app_data->open_dialog = NULL;
+  app_data->save_dialog = NULL;
 
   app_data->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(app_data->window), "GTK Notepad");
   gtk_window_set_default_size(GTK_WINDOW(app_data->window), 600, 400);
   g_signal_connect(app_data->window, "delete-event",
-                   G_CALLBACK(on_delete_event), app_data);
+                   G_CALLBACK(on_delete_event), NULL);
 
   gtk_window_set_resizable(GTK_WINDOW(app_data->window), FALSE);
 
