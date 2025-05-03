@@ -158,7 +158,38 @@ void new_file(AppData *data) {
   data->modified = FALSE;
 }
 
-void quit(AppData *data) { gtk_main_quit(); }
+gboolean confirm_quit(AppData *data) {
+  printf("Confirming quit...\n");
+  printf("Modified: %s\n", data->modified ? "Yes" : "No");
+  if (!data->modified) {
+    return TRUE; // Allow window to be closed
+  } else {
+    GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(data->window),
+        GTK_DIALOG_MODAL |
+        GTK_DIALOG_DESTROY_WITH_PARENT,
+        GTK_MESSAGE_WARNING,
+        GTK_BUTTONS_YES_NO,
+        "You have unsaved changes. "
+        "Do you really want to quit?");
+    gint response = gtk_dialog_run(GTK_DIALOG(dialog));
+    gtk_widget_destroy(dialog);
+
+    if (response == GTK_RESPONSE_YES) {
+      return TRUE; // Allow window to be closed
+    } else {
+      return FALSE; // Block window from closing
+    }
+  }
+}
+
+gboolean on_delete_event(GtkWidget *widget, GdkEvent *event, AppData *data) {
+  if (confirm_quit(data)) {
+    gtk_main_quit();
+    return FALSE; // Let the window close
+  } else {
+    return TRUE; // Keep the window open
+  }
+}
 
 void on_text_changed(GtkWidget *widget, AppData *data) {
   data->modified = TRUE;
@@ -190,7 +221,7 @@ int main(int argc, char *argv[]) {
   data->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   gtk_window_set_title(GTK_WINDOW(data->window), "GTK Notepad");
   gtk_window_set_default_size(GTK_WINDOW(data->window), 600, 400);
-  g_signal_connect(data->window, "destroy", G_CALLBACK(quit), data);
+  g_signal_connect(data->window, "delete-event", G_CALLBACK(on_delete_event), data);
 
   gtk_window_set_resizable(GTK_WINDOW(data->window), FALSE);
 
@@ -226,12 +257,15 @@ int main(int argc, char *argv[]) {
   gtk_menu_shell_append(GTK_MENU_SHELL(filemenu), separator);
 
   GtkWidget *quititem = gtk_menu_item_new_with_label("Quit");
-  g_signal_connect_swapped(quititem, "activate", G_CALLBACK(quit), data);
+  g_signal_connect_swapped(quititem, "activate", G_CALLBACK(on_delete_event),
+    data);
   gtk_menu_shell_append(GTK_MENU_SHELL(filemenu), quititem);
 
   data->text_view = gtk_text_view_new();
   gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(data->text_view), GTK_WRAP_WORD);
-  g_signal_connect(data->text_view, "changed", G_CALLBACK(on_text_changed),
+  GtkTextBuffer *text_buffer =
+    gtk_text_view_get_buffer(GTK_TEXT_VIEW(data->text_view));
+  g_signal_connect(text_buffer, "changed", G_CALLBACK(on_text_changed),
                    data);
 
   GtkWidget *scroll_window = gtk_scrolled_window_new(NULL, NULL);
