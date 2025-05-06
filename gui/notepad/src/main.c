@@ -236,8 +236,8 @@ gboolean confirm_quit() {
 
 gboolean on_delete_event(GtkWidget *widget, GdkEvent *event) {
   if (confirm_quit()) {
-    cleanup();
     gtk_main_quit();
+    cleanup();
     return FALSE; // Let the window close
   } else {
     return TRUE; // Keep the window open
