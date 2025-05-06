@@ -26,11 +26,25 @@ void update_status_bar(GtkTextBuffer *buffer, GtkLabel *status_bar) {
 }
 
 void update_window_title() {
+  const char *base_title = "Notepad";
+  char *title;
+
   if (app_data->filename) {
-    gtk_window_set_title(GTK_WINDOW(app_data->window), app_data->filename);
+    if (app_data->modified) {
+      title = g_strdup_printf("%s* - %s", app_data->filename, base_title);
+    } else {
+      title = g_strdup_printf("%s - %s", app_data->filename, base_title);
+    }
   } else {
-    gtk_window_set_title(GTK_WINDOW(app_data->window), "GTK Notepad");
+    if (app_data->modified) {
+      title = g_strdup_printf("*%s", base_title);
+    } else {
+      title = g_strdup(base_title);
+    }
   }
+
+  gtk_window_set_title(GTK_WINDOW(app_data->window), title);
+  g_free(title);
 }
 
 void load_file(const char *filename) {
@@ -56,6 +70,7 @@ void load_file(const char *filename) {
     }
     app_data->filename = g_strdup(filename);
     app_data->modified = FALSE;
+    update_window_title();
   } else {
     g_print("Error opening file: %s\n", filename);
   }
@@ -124,6 +139,7 @@ void save_handler(GtkWidget *dialog, gint response_id) {
         }
         app_data->filename = g_strdup(filename);
         app_data->modified = FALSE;
+        update_window_title();
       } else {
         g_print("Error saving file.\n");
         g_free(text);
@@ -173,6 +189,7 @@ void save_file() {
       fclose(file);
       g_free(text);
       app_data->modified = FALSE;
+      update_window_title();
     } else {
       g_print("Error saving file.\n");
       g_free(text);
@@ -246,6 +263,7 @@ gboolean on_delete_event(GtkWidget *widget, GdkEvent *event) {
 
 void on_text_changed(GtkWidget *widget) {
   app_data->modified = TRUE;
+  update_window_title();
   update_status_bar(
       gtk_text_view_get_buffer(GTK_TEXT_VIEW(app_data->text_view)),
       GTK_LABEL(app_data->status_bar));
