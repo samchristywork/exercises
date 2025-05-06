@@ -25,6 +25,14 @@ void update_status_bar(GtkTextBuffer *buffer, GtkLabel *status_bar) {
   gtk_label_set_text(status_bar, status_text);
 }
 
+void update_window_title() {
+  if (app_data->filename) {
+    gtk_window_set_title(GTK_WINDOW(app_data->window), app_data->filename);
+  } else {
+    gtk_window_set_title(GTK_WINDOW(app_data->window), "GTK Notepad");
+  }
+}
+
 void load_file(const char *filename) {
   FILE *file = fopen(filename, "r");
   if (file) {
@@ -59,6 +67,7 @@ void load_file(const char *filename) {
   gtk_text_buffer_place_cursor(text_buffer, &start);
 
   update_status_bar(text_buffer, GTK_LABEL(app_data->status_bar));
+  update_window_title();
 }
 
 void open_handler(GtkWidget *dialog, gint response_id) {
@@ -126,6 +135,7 @@ void save_handler(GtkWidget *dialog, gint response_id) {
 
   gtk_widget_destroy(dialog);
   app_data->save_dialog = NULL;
+  update_window_title();
 }
 
 void save_as_file() {
@@ -170,6 +180,7 @@ void save_file() {
   } else {
     save_as_file();
   }
+  update_window_title();
 }
 
 void new_file() {
@@ -183,6 +194,7 @@ void new_file() {
   }
   app_data->modified = FALSE;
   update_status_bar(text_buffer, GTK_LABEL(app_data->status_bar));
+  update_window_title();
 }
 
 void cleanup() {
